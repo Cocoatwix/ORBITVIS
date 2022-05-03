@@ -1,0 +1,11 @@
+The purpose of this program is to visualise the orbits of linear cellular automata (vectors being repeatedly multiplied by some matrix, mod some modulus). It does so by representing the set of all vectors mod some modulus as coloured squares on a grid. The colours then change for every iteration (every matrix multiplication computed on the vectors) to showcase how the vectors behave under the given setup. This program should be used in conjunction with LINCELLAUT to generate the .orbits and .orbitsloc files necessary to run the program. This program doesn't perform any automata calculations. Rather, it merely reads off the data passed to it in the form of .orbits and .orbitsloc files and displays it.
+
+The right arrow key computes the next iteration and updates the grid. This process can take a long time depending on the automata being visualised. The left arrow key resets to the first iteration (iteration #0) and updates the grid accordingly.
+
+There are currently two different colouring modes to use. They can be toggled by setting the COLORMODE variable at the top of orbitvis.py to either 0 or 1.
+
+Mode 0 colours vectors based on which vector they become on a certain iteration. For instance, if the vector <1, 1> becomes <2, 2> on iteration #1--iteration #0 being before any matrix multiplication happens--then the vector <1, 1> will be coloured the same as <2, 2> was on iteration #0.
+
+Mode 1 colours vectors based on which vectors become them on that iteration. For instance, if the vector <1, 1> becomes <2, 2> on iteration #1, then <2, 2> will be coloured the same as <1, 1> was on iteration #0. This mode is slightly problematic when used on automata with transient regions, as multiple vectors can become the same vector during an iteration. The program simply colours vectors based on the last calculated vector that becomes them.
+
+It's likely that this program won't require the use of LINCELLAUT in the future. Using ctypes to run the C code for generating orbits directly seems like it would be much, much faster. However, the code for LINCELLAUT makes use of many different C constructs, making it difficult to link up to Python. Regardless, it's something that's planned for the future.
