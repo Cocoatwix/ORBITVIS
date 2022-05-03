@@ -1,3 +1,11 @@
+#Nobody needs to see my todo list
+todo.txt
+havedone.txt
+
+#Don't need orbit data in the repo
+orbitdata/*.orbits
+orbitdata/*.orbitsloc
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
