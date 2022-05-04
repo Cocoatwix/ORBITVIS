@@ -1,6 +1,8 @@
-The purpose of this program is to visualise the orbits of linear cellular automata (vectors being repeatedly multiplied by some matrix, mod some modulus). It does so by representing the set of all vectors mod some modulus as coloured squares on a grid. The colours then change for every iteration (every matrix multiplication computed on the vectors) to showcase how the vectors behave under the given setup. This program should be used in conjunction with LINCELLAUT to generate the .orbits and .orbitsloc files necessary to run the program. This program doesn't perform any automata calculations. Rather, it merely reads off the data passed to it in the form of .orbits and .orbitsloc files and displays it.
+The purpose of this program is to visualise the orbits of linear cellular automata (vectors being repeatedly multiplied by some matrix, mod some modulus). It does so by representing the set of all vectors mod some modulus as coloured squares on a grid. The colours then change for every iteration (every matrix multiplication computed on the vectors) to showcase how the vectors behave under the given setup. To run the program, run orbitvis.py directly. Make sure you have PyGame setup with your Python distribution (PyGame 1.9.6 was used for testing, though other versions should also work).
 
-The right arrow key computes the next iteration and updates the grid. This process can take a long time depending on the automata being visualised. The left arrow key resets to the first iteration (iteration #0) and updates the grid accordingly.
+The right arrow key computes the next iteration and updates the grid. This process can take a long time depending on the automata being visualised. The left arrow key resets to the first iteration (iteration #0) and updates the grid accordingly, OR computes the previous iteration and updates the grid, depending on which CMODE is active (see below).
+
+~~~
 
 There are currently two different colouring modes to use. They can be toggled by setting the COLORMODE variable at the top of orbitvis.py to either 0 or 1.
 
@@ -8,4 +10,16 @@ Mode 0 colours vectors based on which vector they become on a certain iteration.
 
 Mode 1 colours vectors based on which vectors become them on that iteration. For instance, if the vector <1, 1> becomes <2, 2> on iteration #1, then <2, 2> will be coloured the same as <1, 1> was on iteration #0. This mode is slightly problematic when used on automata with transient regions, as multiple vectors can become the same vector during an iteration. The program simply colours vectors based on the last calculated vector that becomes them.
 
-It's likely that this program won't require the use of LINCELLAUT in the future. Using ctypes to run the C code for generating orbits directly seems like it would be much, much faster. However, the code for LINCELLAUT makes use of many different C constructs, making it difficult to link up to Python. Regardless, it's something that's planned for the future.
+~~~
+
+There are also two different computation modes for traversing orbits. These can be toggled by setting the CMODE variable at the top of orbitvis.py to either 0 or 1.
+
+Mode 0 is used in conjunction with LINCELLAUT, which generates .orbits and .orbitsloc files. ORBITVIS doesn't perform any automata calculations in this mode. Rather, it merely reads off the data passed to it in the form of .orbits and .orbitsloc files and displays it. 
+This mode is considerably slower than mode 1, especially for higher moduli (anything above 25, from my experience). However, mode 0 takes less setup to operate. The only things required to run in mode 0 are the .orbits and .orbitsloc files which LINCELLAUT generates (using the write_orbits() function).
+
+Mode 1 is also used in conjunction with LINCELLAUT, though the output of the program isn't necessary. Instead of reconstructing the orbits from .orbits files, mode 1 makes use of LINCELLAUT's codebase to generate orbits on the fly. In order to run mode 1, LINCELLAUT's header files, object files, update matrix file, and a shared library file all must be placed in their respective places within ORBITVIS' directory. As well, the modulus used must be manually input into ORBITVIS' .config file (see LINCELLAUT's documentation on .config files for more info).
+Despite requiring a fair bit of setup to use, mode 1 is significantly faster than mode 0 thanks to the speed advantage C has over Python. It also requires less disk space to use since the .orbits file doesn't need to be created. 
+
+~~~
+
+To ease use of both CMODE modes, I plan to create particular versions of LINCELLAUT's makefile that create all the files you need for both modes, and organise them in a way which makes it easy to transfer between programs. Until then, this file transfer must be done manually.
