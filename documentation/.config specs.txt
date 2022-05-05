@@ -11,3 +11,5 @@ update : This key specifies the filepath for the update matrix to be used for th
 objects : This key specifies the filepath for the object files' directory if CMODE is 1 or 2. If CMODE is 0, this key can be ignored. This key expects a string (with no surrounding quotes).
 
 iters : This key specifies the filepath for the .iteration file needed if CMODE is 0. The file extension should be included. If CMODE is 1 or 2, this key can be ignored.
+
+hover : This key specifies whether to turn on vector hovering, which allows us to print info about each vector to the console. If present, HOVERMODE is set to True. If this key isn't listed, HOVERMODE is set to False. If CMODE is 1, this key has no effect (HOVERMODE can't be enabled on mode 1). This key does not have a corresponding value.

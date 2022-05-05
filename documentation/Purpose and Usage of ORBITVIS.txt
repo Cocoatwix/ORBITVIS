@@ -25,3 +25,4 @@ For large moduli, mode 2 should perform faster than mode 1 at the cost of using 
 
 ~~~
 
+Mode 0 and mode 2 allow you to gain some insights into the vectors you're looking at. If HOVERMODE is enabled (see documentation for .config file), then clicking on any of the vectors on screen will print out info regarding the vector you clicked, such as which vectors landed on it that iteration, where that vector travelled to that iteration, etc.

@@ -20,6 +20,8 @@ https://stackoverflow.com/questions/11384015/
 https://docs.python.org/3.8/library/ctypes.html?highlight=ctypes#module-ctypes
 '''
 
+from math import floor
+
 from ctypes import *
 
 import pygame
@@ -41,6 +43,10 @@ CMODE = 1
 #Default CMODE is #1
 COLORMODE = 1
 
+#Says whether we can click on vectors to obtain information about them
+#Also activates hovering over vectors with the mouse
+HOVERMODE = False
+
 MODULUS = 0
 iterations = 0
 F = ((c_int * 2) * 2)
@@ -55,7 +61,11 @@ iters = None
 configData = open("config/system.config", "r")
 for line in configData:
 	splitline = line.split(" ")
-	splitline[1] = splitline[1].rstrip()
+	
+	if len(splitline) == 2:
+		splitline[1] = splitline[1].rstrip()
+	else:
+		splitline[0] = splitline[0].rstrip()
 	
 	if splitline[0] == "mod":
 		MODULUS = int(splitline[1])
@@ -74,6 +84,9 @@ for line in configData:
 		
 	elif splitline[0] == "iters":
 		ITERPATH = splitline[1]
+		
+	elif splitline[0] == "hover":
+		HOVERMODE = True
 
 
 vectorColors = []
@@ -82,6 +95,13 @@ vectorColors = []
 #This prevents us from having to retraverse each orbit each time
 # we want to iterate
 vectorStates = []
+
+#This list holds all the vectors that land on a particular vector
+# on the current iteration
+vectorVisitors = [[[] for y in range(0, MODULUS)] for x in range(0, MODULUS)]
+
+#Holds the vector we're pointing at with the mouse
+vectorHover = [-1, -1]
 
 if CMODE in [1, 2]:
 	#Load C libraries, get function(s)
@@ -122,7 +142,7 @@ caption          = "ORBITVIS"
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-BLUE = (0, 0, 255)
+BLUE = (50, 50, 255)
 
 windowDisplay = pygame.display.set_mode(windowDimensions, RESIZABLE)
 windowCaption = pygame.display.set_caption(caption)
@@ -169,6 +189,10 @@ def draw_plane(surface):
 	# resulting from floating point rounding inconsistencies
 	xExtend = 0
 	yExtend = 0
+	
+	xStart = (windowDimensions[0] - gridSize) / 2
+	yStart = (windowDimensions[1] + gridSize) / 2
+	tileSize = gridSize/MODULUS
 
 	for x in range(0, MODULUS):
 		for y in range(0, MODULUS):
@@ -183,24 +207,24 @@ def draw_plane(surface):
 				yExtend = 0
 			else:
 				yExtend = 1
-				
+
 			if CMODE in [0, 2]:
 				if COLORMODE == 0:
 					pygame.draw.rect(
 					surface,
 					vectorColors[vectorStates[x][y][0]][vectorStates[x][y][1]],
-					[(windowDimensions[0]-gridSize)/2 + x*(gridSize/MODULUS), 
-					windowDimensions[1] - (windowDimensions[1]-gridSize)/2 - (y+1)*(gridSize/MODULUS),
-					gridSize//MODULUS + xExtend, gridSize//MODULUS + yExtend]
+					[xStart + x*tileSize, 
+					yStart - (y+1)*tileSize,
+					tileSize + xExtend, tileSize + yExtend]
 					)
 					
 				elif COLORMODE == 1:
 					pygame.draw.rect(
 					surface,
 					vectorColors[x][y],
-					[(windowDimensions[0]-gridSize)/2 + vectorStates[x][y][0]*(gridSize/MODULUS), 
-					windowDimensions[1] - (windowDimensions[1]-gridSize)/2 - (vectorStates[x][y][1]+1)*(gridSize/MODULUS),
-					gridSize//MODULUS + xExtend, gridSize//MODULUS + yExtend]
+					[xStart + vectorStates[x][y][0]*tileSize, 
+					yStart - (vectorStates[x][y][1]+1)*tileSize,
+					tileSize + xExtend, tileSize + yExtend]
 					)
 					
 			elif CMODE == 1:
@@ -208,25 +232,31 @@ def draw_plane(surface):
 				vectorKey = C_step(x, y, pointer(F), MODULUS, iterations)
 				vectY = vectorKey % MODULUS
 				vectX = (vectorKey - vectY)//MODULUS
-				#print("Coords:", vectX, vectY)
 				
 				if COLORMODE == 0:
 					pygame.draw.rect(
 					surface,
 					vectorColors[vectX][vectY],
-					[(windowDimensions[0]-gridSize)/2 + x*(gridSize/MODULUS), 
-					windowDimensions[1] - (windowDimensions[1]-gridSize)/2 - (y+1)*(gridSize/MODULUS),
-					gridSize//MODULUS + xExtend, gridSize//MODULUS + yExtend]
+					[xStart + x*tileSize, 
+					yStart - (y+1)*tileSize,
+					tileSize + xExtend, tileSize + yExtend]
 					)
 					
 				elif COLORMODE == 1:
 					pygame.draw.rect(
 					surface,
 					vectorColors[x][y],
-					[(windowDimensions[0]-gridSize)/2 + vectX*(gridSize/MODULUS), 
-					windowDimensions[1] - (windowDimensions[1]-gridSize)/2 - (vectY+1)*(gridSize/MODULUS),
-					gridSize//MODULUS + xExtend, gridSize//MODULUS + yExtend]
+					[xStart + vectX*tileSize, 
+					yStart - (vectY+1)*tileSize,
+					tileSize + xExtend, tileSize + yExtend]
 					)
+					
+	if HOVERMODE and vectorHover[0] != -1:
+		pygame.draw.rect(surface, BLUE, 
+		[xStart + vectorHover[0]*tileSize,
+		yStart - (vectorHover[1]+1)*tileSize,
+		tileSize, tileSize]
+		)
 
 
 if CMODE == 0:
@@ -251,6 +281,7 @@ for x in range(0, MODULUS):
 
 while True:
 	for event in pygame.event.get():
+	
 		if event.type == pygame.KEYDOWN:
 			if event.key == pygame.K_RIGHT: #Iterate
 				iterations += 1
@@ -268,7 +299,7 @@ while True:
 					iterations = 0
 					vectorStates = [[[x, y] for y in range(0, MODULUS)] for x in range(0, MODULUS)]
 					
-				elif CMODE in 1:
+				elif CMODE == 1:
 					iterations -= 1
 					if iterations < 0:
 						iterations = 0
@@ -288,6 +319,34 @@ while True:
 			pygame.display.update()
 			print("Done")
 			
+		elif HOVERMODE and CMODE != 1 and event.type == pygame.MOUSEMOTION:
+			#Left, right, top, bottom. Checking to see if mouse is on grid
+			posX, posY = event.pos
+			if (posX > (windowDimensions[0]-gridSize)/2 and
+				posX < (windowDimensions[0]+gridSize)/2 and
+				posY > (windowDimensions[1]-gridSize)/2 and
+				posY < (windowDimensions[1]+gridSize)/2):
+				
+				posX = floor((posX - (windowDimensions[0]-gridSize)/2) / (gridSize/MODULUS))
+				posY = floor((posY - (windowDimensions[1]-gridSize)/2) / (gridSize/MODULUS))
+				
+				#posX and posY are now the vector coordinates of where we're pointing
+				vectorHover = [posX, MODULUS - posY - 1]
+			else:
+				vectorHover[0] = -1
+				
+			draw_plane(windowDisplay)
+			pygame.display.update()
+			
+			#Give info about the vector clicked
+		elif HOVERMODE and event.type == pygame.MOUSEBUTTONDOWN:
+			if vectorHover[0] != -1:
+				print("Vector clicked: <", vectorHover[0], ", ", vectorHover[1], ">", sep="")
+				if CMODE in [0, 2]:
+					print("Destination: <", vectorStates[vectorHover[0]][vectorHover[1]][0], 
+					", ", vectorStates[vectorHover[0]][vectorHover[1]][1], ">", sep="")
+					
+				
 		elif event.type == pygame.QUIT:
 			if CMODE == 0:
 				iters.close()

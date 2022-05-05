@@ -5,7 +5,9 @@ havedone.txt
 #Don't need specific data in the repo
 *.orbits
 *.orbitsloc
-*.matrix
+matrices/*.matrix
+to-orbitvis/*
+iterations/*.iteration
 
 #Don't include PyGame Identifier files
 *.Identifier
