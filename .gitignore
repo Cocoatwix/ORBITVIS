@@ -2,12 +2,10 @@
 todo.txt
 havedone.txt
 
-#Don't need orbit data in the repo
-orbits/*.orbits
-orbits/*.orbitsloc
-
-#C code can be found at LINCELLAUT
-headers/*
+#Don't need specific data in the repo
+*.orbits
+*.orbitsloc
+*.matrix
 
 #Don't include PyGame Identifier files
 *.Identifier
@@ -17,9 +15,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# C extensions
-objects/*.so
-objects/*.o
+# C extensions (code can be found in LINCELLAUT)
+*.so
+*.o
+*.h
 
 # Distribution / packaging
 .Python

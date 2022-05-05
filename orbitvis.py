@@ -26,17 +26,55 @@ import pygame
 from pygame.locals import VIDEORESIZE
 from pygame.locals import RESIZABLE
 
-#0 : Colour based on where its initial vector lands on that iteration
-#1 : Colour based on which vector goes to that spot
-COLORMODE = 1
-
-#0 : Use .orbits and .orbitsloc files to traverse orbits (slower, but easier to set up)
+#0 : Use .iteration file to traverse orbits (slower, but easier to set up)
 #1 : Use .so files to generate iterations on the fly (way, way faster)
+#2 : Same as #1, except current vector states are saved in vectorStates,
+#    reducing the C computation needed. (potentially faster than #1 for large moduli,
+#    though requires more memory).
+
+#Default CMODE is #1
 CMODE = 1
 
-modulus = 0
+#0 : Colour based on where its initial vector lands on that iteration
+#1 : Colour based on which vector goes to that spot
+
+#Default CMODE is #1
+COLORMODE = 1
+
+MODULUS = 0
 iterations = 0
 F = ((c_int * 2) * 2)
+MATRIXPATH = ""
+
+ITERPATH = ""
+OBJECTPATH = ""
+iters = None
+
+#Load config data
+#Should be error checking here, but oh well
+configData = open("config/system.config", "r")
+for line in configData:
+	splitline = line.split(" ")
+	splitline[1] = splitline[1].rstrip()
+	
+	if splitline[0] == "mod":
+		MODULUS = int(splitline[1])
+		
+	elif splitline[0] == "cmode":
+		CMODE = int(splitline[1])
+		
+	elif splitline[0] == "colormode":
+		COLORMODE = int(splitline[1])
+		
+	elif splitline[0] == "update":
+		MATRIXPATH = splitline[1]
+		
+	elif splitline[0] == "objects":
+		OBJECTPATH = splitline[1]
+		
+	elif splitline[0] == "iters":
+		ITERPATH = splitline[1]
+
 
 vectorColors = []
 
@@ -45,19 +83,19 @@ vectorColors = []
 # we want to iterate
 vectorStates = []
 
-if CMODE == 1:
+if CMODE in [1, 2]:
 	#Load C libraries, get function(s)
 	#libc = cdll.msvcrt
-	sharedC = CDLL("./objects/orbitvis.so", "r")
-	orbit_step = sharedC.orbit_step
+	sharedC = CDLL(OBJECTPATH + "/orbitvis.so", "r")
+	C_step = sharedC.C_step
 		
 	#Defining the parameter types for the function
-	orbit_step.argtypes = [c_int, c_int, POINTER((c_int * 2) * 2), c_int, c_int]
-	orbit_step.restype = c_int
+	C_step.argtypes = [c_int, c_int, POINTER((c_int * 2) * 2), c_int, c_int]
+	C_step.restype = c_int
 
 	#Get update matrix data
 	try:
-		matrixData = open("matrices/update.matrix")
+		matrixData = open(MATRIXPATH)
 	except OSError as error:
 		print(error)
 		pygame.quit()
@@ -73,13 +111,6 @@ if CMODE == 1:
 
 	#This is our update matrix
 	F  = ((c_int * 2) * 2)(row1, row2)
-	
-#Load config data
-configData = open("config/system.config", "r")
-for line in configData:
-	#Should be error checking here, but oh well
-	if line.split(" ")[0] == "mod":
-		modulus = int(line.split(" ")[1])
 
 
 #Optimise this later when I know what modules I need
@@ -98,55 +129,34 @@ windowCaption = pygame.display.set_caption(caption)
 icon = pygame.image.load("index.jpg")
 pygame.display.set_icon(icon)
 
-print(modulus)
 
-
-def find_orbit(orbitData, orbitLocData, vector):
-	'''Sets orbitData to the correct location for the
-	given vector's orbit.'''
+def step(iterData, vector):
+	'''Uses .iteration file to find given vector's
+	next step. Returns the found vector.'''
 	
-	vector = [int(vector[0]), int(vector[1])]
+	lineNumber = 0
+	for x in range(1, len(vector)+1):
+		lineNumber += vector[-x]*MODULUS**(x-1)
 	
-	#Go to correct position in .orbitsloc file
-	orbitLocData.seek(0, 0) 
-	[orbitLocData.readline() for x in range(0, vector[0])]
-	
-	#Get line number of our vector's orbit, goto correct line
-	lineNumber = int(orbitLocData.readline().split(" ")[vector[1]])
-	orbitData.seek(0, 0)
-	[orbitData.readline() for x in range(0, lineNumber)]
-
-
-def nav_orbit(orbitData, orbitLocData, vector, iters):
-	'''Finds the correct vector in the orbit for the 
-	number of iterations given and returns it.'''
-
-	find_orbit(orbitData, orbitLocData, vector)
-	
-	vectInOrbit = str(vector[0]) + " " + str(vector[1])
-	prevVectInOrbit = ""
-	
-	#Now, we navigate through the orbit
-	while iters > 0:
-		vectInOrbit = orbitData.readline()
-		
-		#If we got to the end of the listed orbit
-		if (vectInOrbit == "-\n"):
-			find_orbit(orbitData, orbitLocData, prevVectInOrbit.split(" "))
-		else:
-			prevVectInOrbit = vectInOrbit
-			iters -= 1
-	
-	return [int(vectInOrbit.rstrip().split(" ")[x]) for x in range(0, 2)]
+	iterData.seek(0, 0)
+	[iterData.readline() for x in range(0, lineNumber)]
+	newVector = (iterData.readline().split(" "))[:-1]
+	return [int(x) for x in newVector]
 
 	
-def iterate_plane(orbitData, orbitLocData):
+def iterate_plane(iterData):
 	'''Iterates each vector in the plane, stores their state
 	in vectorStates.'''
 	
-	for x in range(0, modulus):
-		for y in range(0, modulus):
-			vectorStates[x][y] = nav_orbit(orbitData, orbitLocData, vectorStates[x][y], 1)
+	for x in range(0, MODULUS):
+		for y in range(0, MODULUS):
+			if CMODE == 0:
+				vectorStates[x][y] = step(iterData, vectorStates[x][y])
+			elif CMODE == 2:
+				vectKey = C_step(vectorStates[x][y][0], vectorStates[x][y][1], F, MODULUS, 1)
+				vectY   = vectKey % MODULUS
+				vectX   = (vectKey - vectY)//MODULUS
+				vectorStates[x][y] = [vectX, vectY]
 
 
 def draw_plane(surface):
@@ -154,76 +164,89 @@ def draw_plane(surface):
 	location after iters iterations.'''
 	
 	windowDisplay.fill(WHITE)
+	
+	#These two variables help remove white grid lines on the plot
+	# resulting from floating point rounding inconsistencies
+	xExtend = 0
+	yExtend = 0
 
-	for x in range(0, modulus):
-		for y in range(0, modulus):
-			if CMODE == 0:
+	for x in range(0, MODULUS):
+		for y in range(0, MODULUS):
+		
+			#Calculating the appropriate adjustments to remove gridlines
+			if x == MODULUS - 1:
+				xExtend = 0
+			else:
+				xExtend = 1
+				
+			if y == MODULUS - 1:
+				yExtend = 0
+			else:
+				yExtend = 1
+				
+			if CMODE in [0, 2]:
 				if COLORMODE == 0:
 					pygame.draw.rect(
 					surface,
 					vectorColors[vectorStates[x][y][0]][vectorStates[x][y][1]],
-					[(windowDimensions[0]-gridSize)/2 + x*(gridSize/modulus), 
-					windowDimensions[1] - (windowDimensions[1]-gridSize)/2 - (y+1)*(gridSize/modulus),
-					gridSize/modulus, gridSize/modulus]
+					[(windowDimensions[0]-gridSize)/2 + x*(gridSize/MODULUS), 
+					windowDimensions[1] - (windowDimensions[1]-gridSize)/2 - (y+1)*(gridSize/MODULUS),
+					gridSize//MODULUS + xExtend, gridSize//MODULUS + yExtend]
 					)
 					
 				elif COLORMODE == 1:
 					pygame.draw.rect(
 					surface,
 					vectorColors[x][y],
-					[(windowDimensions[0]-gridSize)/2 + vectorStates[x][y][0]*(gridSize/modulus), 
-					windowDimensions[1] - (windowDimensions[1]-gridSize)/2 - (vectorStates[x][y][1]+1)*(gridSize/modulus),
-					gridSize/modulus, gridSize/modulus]
+					[(windowDimensions[0]-gridSize)/2 + vectorStates[x][y][0]*(gridSize/MODULUS), 
+					windowDimensions[1] - (windowDimensions[1]-gridSize)/2 - (vectorStates[x][y][1]+1)*(gridSize/MODULUS),
+					gridSize//MODULUS + xExtend, gridSize//MODULUS + yExtend]
 					)
 					
 			elif CMODE == 1:
 				#Convert C output to vector
-				vectorKey = orbit_step(x, y, pointer(F), modulus, iterations)
-				vectY = vectorKey % modulus
-				vectX = (vectorKey - vectY)//modulus
+				vectorKey = C_step(x, y, pointer(F), MODULUS, iterations)
+				vectY = vectorKey % MODULUS
+				vectX = (vectorKey - vectY)//MODULUS
 				#print("Coords:", vectX, vectY)
 				
 				if COLORMODE == 0:
 					pygame.draw.rect(
 					surface,
 					vectorColors[vectX][vectY],
-					[(windowDimensions[0]-gridSize)/2 + x*(gridSize/modulus), 
-					windowDimensions[1] - (windowDimensions[1]-gridSize)/2 - (y+1)*(gridSize/modulus),
-					gridSize/modulus, gridSize/modulus]
+					[(windowDimensions[0]-gridSize)/2 + x*(gridSize/MODULUS), 
+					windowDimensions[1] - (windowDimensions[1]-gridSize)/2 - (y+1)*(gridSize/MODULUS),
+					gridSize//MODULUS + xExtend, gridSize//MODULUS + yExtend]
 					)
 					
 				elif COLORMODE == 1:
 					pygame.draw.rect(
 					surface,
 					vectorColors[x][y],
-					[(windowDimensions[0]-gridSize)/2 + vectX*(gridSize/modulus), 
-					windowDimensions[1] - (windowDimensions[1]-gridSize)/2 - (vectY+1)*(gridSize/modulus),
-					gridSize/modulus, gridSize/modulus]
+					[(windowDimensions[0]-gridSize)/2 + vectX*(gridSize/MODULUS), 
+					windowDimensions[1] - (windowDimensions[1]-gridSize)/2 - (vectY+1)*(gridSize/MODULUS),
+					gridSize//MODULUS + xExtend, gridSize//MODULUS + yExtend]
 					)
 
 
-if CMODE == 0:				
-	#Open orbit files
+if CMODE == 0:
 	try:
-		orbits    = open("orbits/orbits.orbits", "r")
-		orbitsloc = open("orbits/orbits.orbitsloc", "r")
+		iters = open(ITERPATH, "r")
 	except OSError as error:
 		print(error)
 		pygame.quit()
 		quit()
-
-	#Determine the size/dimensions of our grid (the modulus)
-	#The -1 ignores the \n at the end of the line
-	modulus = len(orbitsloc.readline().split(" ")) - 1
 	
-	#Initialise state of each vector
-	vectorStates = [[[x, y] for y in range(0, modulus)] for x in range(0, modulus)]
+	
+#Initialise state of each vector, if needed
+if CMODE in [0, 2]:
+	vectorStates = [[[x, y] for y in range(0, MODULUS)] for x in range(0, MODULUS)]
 
 #Create array of colors for each vector
-vectorColors = [[] for x in range(0, modulus)]
-for x in range(0, modulus):
-	for y in range(0, modulus):
-		vectorColors[x].append((255*x//modulus, 255*y//modulus, 0))
+vectorColors = [[] for x in range(0, MODULUS)]
+for x in range(0, MODULUS):
+	for y in range(0, MODULUS):
+		vectorColors[x].append((255*x//MODULUS, 255*y//MODULUS, 0))
 
 
 while True:
@@ -233,23 +256,22 @@ while True:
 				iterations += 1
 				print("Rendering iteration #", iterations, sep="")
 				
-				if CMODE == 0:
-					iterate_plane(orbits, orbitsloc)
+				if CMODE in [0, 2]:
+					iterate_plane(iters)
 
 				draw_plane(windowDisplay)
 				pygame.display.update()
 				print("Done")
 				
 			elif event.key == pygame.K_LEFT: #Reset to 0th iteration
-				if CMODE == 0:
+				if CMODE in [0, 2]:
 					iterations = 0
-				elif CMODE == 1:
+					vectorStates = [[[x, y] for y in range(0, MODULUS)] for x in range(0, MODULUS)]
+					
+				elif CMODE in 1:
 					iterations -= 1
 					if iterations < 0:
 						iterations = 0
-				
-				if CMODE == 0:
-					vectorStates = [[[x, y] for y in range(0, modulus)] for x in range(0, modulus)]
 					
 				print("Rendering iteration #", iterations, sep="")
 				draw_plane(windowDisplay)
@@ -268,8 +290,7 @@ while True:
 			
 		elif event.type == pygame.QUIT:
 			if CMODE == 0:
-				orbits.close()
-				orbitsloc.close()
+				iters.close()
 			
 			pygame.quit()
 			quit()

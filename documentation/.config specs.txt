@@ -1,3 +1,13 @@
-The following lists the key-value pairs which can be used for ORBITVIS' .config file. Unlike LINCELLAUT's .config files, ORBITVIS' .config file has no default limit on the length of keys or values. For a more complete description of .config files, see LINCELLAUT's documentation.
+The following lists the key-value pairs which can be used for ORBITVIS' .config file. Unlike LINCELLAUT's .config files, ORBITVIS' .config file has no default limit on the length of keys or values. Also unlike LINCELLAUT's .config file, only one space can be used between keys and values. For a more complete description of .config files, see LINCELLAUT's documentation.
 
-mod : This key specifies the modulus used in the given linear cellular automaton. When CMODE is set to 0, this key does nothing. When CMODE is set to 1, this key is mandatory for ORBITVIS to run (otherwise, the program has no way to know how big to make the vector grid). This key expect an integer as its value.
+mod : This key specifies the modulus used in the given linear cellular automaton. his key expects an integer as its value.
+
+cmode : This key specifies which CMODE to use (see ORBITVIS documentation for valid modes). If omitted, the default CMODE is 1. This key expects an integer as its value.
+
+colormode : This key specifies which COLORMODE to use (see ORBITVIS documentation for valid modes). If omitted, the default COLORMODE is 1. This key expects and integer as its value.
+
+update : This key specifies the filepath for the update matrix to be used for the given linear cellular automaton, given in .matrix format. The file extension should be included. If CMODE is 0, this key can be ignored. This key expects a string (with no surrounding quotes).
+
+objects : This key specifies the filepath for the object files' directory if CMODE is 1 or 2. If CMODE is 0, this key can be ignored. This key expects a string (with no surrounding quotes).
+
+iters : This key specifies the filepath for the .iteration file needed if CMODE is 0. The file extension should be included. If CMODE is 1 or 2, this key can be ignored.

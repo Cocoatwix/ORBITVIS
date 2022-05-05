@@ -1,1 +1,0 @@
-Both regular objects and shared objects are placed in this folder.
