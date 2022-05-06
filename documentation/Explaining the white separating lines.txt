@@ -2,4 +2,4 @@ Depending on the window size and modulus used, the grid displayed by ORBITVIS ca
 
 To get rid of these separating lines, simply readjust the window size until you find a size that eliminates the lines.
 
-This issue could probably be fixed by considering the last vector drawn when drawing each vector in draw_plane(), and comparing their coordinates to detect a rounding inconsistency. 
+As of now, this problem is believed to be solved. 

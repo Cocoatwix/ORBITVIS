@@ -10,6 +10,18 @@ update : This key specifies the filepath for the update matrix to be used for th
 
 objects : This key specifies the filepath for the object files' directory if CMODE is 1 or 2. If CMODE is 0, this key can be ignored. This key expects a string (with no surrounding quotes).
 
-iters : This key specifies the filepath for the .iteration file needed if CMODE is 0. The file extension should be included. If CMODE is 1 or 2, this key can be ignored.
+iters : This key specifies the filepath for the .iteration file needed if CMODE is 0. The file extension should be included. If CMODE is 1 or 2, this key can be ignored. This key expects a string (no surrounding quotes).
 
 hover : This key specifies whether to turn on vector hovering, which allows us to print info about each vector to the console. If present, HOVERMODE is set to True. If this key isn't listed, HOVERMODE is set to False. If CMODE is 1, this key has no effect (HOVERMODE can't be enabled on mode 1). This key does not have a corresponding value.
+
+capture : This key specifies whether to switch to CAPTUREMODE, where a screenshot of each plane is taken and saved to a directory. If present, CAPTUREMODE is set to True. If this key isn't listed, CAPTUREMODE is set to False. This key does not have a corresponding value.
+
+screenshots : This key specifies the directory to place screenshots when in CAPTUREMODE. Note that this directory must already exist for ORBITVIS to recognise it. This key expects a string (no surrounding quotes).
+
+maxcaptures : This key specifies the maximum number of screenshots ORBITVIS should take before stopping. If this key is omitted, ORBITVIS will take as many screenshots as needed to get back to the vectors' initial configuration. However, if the vectors don't go back to their initial configuration (they get stuck in a cycle), ORBITVIS will indefinitely take screenshots. It is the user's responsibility to know beforehand which of the two cases will occur. This key expects an integer for its value.
+
+inititer : This key specifies the number of iterations to start on. Essentially, the program will iterate the given number of times before displaying the plane. If omitted, this value defaults to 0. This key expects an integer for its value.
+
+sizeX : This key specifies the width of the window, in pixels, to use on startup. If omitted, this value defaults to 640. This key expects an integer for its value.
+
+sizeY : This key specifies the height of the window, in pixels, to use on startup. If omitted, this value defaults to 480. This key expects an integer for its value.

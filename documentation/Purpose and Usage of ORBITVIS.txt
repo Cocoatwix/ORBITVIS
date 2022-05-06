@@ -2,6 +2,8 @@ The purpose of this program is to visualise the orbits of linear cellular automa
 
 The right arrow key computes the next iteration and updates the grid. This process can take a long time depending on the automata being visualised. The left arrow key resets to the first iteration (iteration #0) and updates the grid accordingly, OR computes the previous iteration and updates the grid, depending on which CMODE is active (see below).
 
+The down arrow key takes a screenshot of the current plane and places it in the working directory.
+
 ~~~
 
 There are currently two different colouring modes to use. They can be toggled by setting the COLORMODE variable at the top of orbitvis.py to either 0 or 1.
@@ -26,3 +28,7 @@ For large moduli, mode 2 should perform faster than mode 1 at the cost of using 
 ~~~
 
 Mode 0 and mode 2 allow you to gain some insights into the vectors you're looking at. If HOVERMODE is enabled (see documentation for .config file), then clicking on any of the vectors on screen will print out info regarding the vector you clicked, such as which vectors landed on it that iteration, where that vector travelled to that iteration, etc.
+
+~~~
+
+If CAPTUREMODE is enabled (see documentation for .config file), ORBITVIS will generate every possible plane with the given settings and save them as screenshots. ORBITVIS knows to automatically stop generating screenshots when the vectors return to their initial state. HOWEVER, ORBITVIS makes no attempt to stop taking screenshots if it gets stuck in a cycle that does not reset the plane back to its initial configuration. It is the user's responsibility to set the MAXCAPTURES variable (via the .config file) to cap the number of desired screenshots in this case.
