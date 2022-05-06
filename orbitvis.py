@@ -108,10 +108,14 @@ if CMODE in [1, 2]:
 	#libc = cdll.msvcrt
 	sharedC = CDLL(OBJECTPATH + "/orbitvis.so", "r")
 	C_step = sharedC.C_step
+	get_orbit_info = sharedC.get_orbit_info
 		
 	#Defining the parameter types for the function
 	C_step.argtypes = [c_int, c_int, POINTER((c_int * 2) * 2), c_int, c_int]
 	C_step.restype = c_int
+	
+	get_orbit_info.argtypes = [POINTER(c_int * 2), POINTER((c_int * 2) * 2), c_int]
+	get_orbit_info.restype = c_int
 
 	#Get update matrix data
 	try:
@@ -308,6 +312,8 @@ while True:
 				draw_plane(windowDisplay)
 				pygame.display.update()
 				print("Done")
+				
+			pygame.display.set_caption(caption + " - Iteration #" + str(iterations))
 
 		elif event.type == VIDEORESIZE: #When window is resized
 			print("Rendering iteration #", iterations, sep="")
@@ -345,6 +351,8 @@ while True:
 				if CMODE in [0, 2]:
 					print("Destination: <", vectorStates[vectorHover[0]][vectorHover[1]][0], 
 					", ", vectorStates[vectorHover[0]][vectorHover[1]][1], ">", sep="")
+					clickedVect = (c_int * 2)(vectorHover[0], vectorHover[1])
+					print("Cycle length:", get_orbit_info(clickedVect, F, MODULUS))
 					
 				
 		elif event.type == pygame.QUIT:
