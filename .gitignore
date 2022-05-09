@@ -1,6 +1,7 @@
 #Nobody needs to see my todo list
 todo.txt
 havedone.txt
+doing.txt
 
 #Don't need specific data in the repo
 *.orbits

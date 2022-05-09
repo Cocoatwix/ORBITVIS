@@ -16,7 +16,7 @@ hover : This key specifies whether to turn on vector hovering, which allows us t
 
 capture : This key specifies whether to switch to CAPTUREMODE, where a screenshot of each plane is taken and saved to a directory. If present, CAPTUREMODE is set to True. If this key isn't listed, CAPTUREMODE is set to False. This key does not have a corresponding value.
 
-screenshots : This key specifies the directory to place screenshots when in CAPTUREMODE. Note that this directory must already exist for ORBITVIS to recognise it. This key expects a string (no surrounding quotes).
+screenshots : This key specifies the directory to place screenshots when in CAPTUREMODE. If the directory does not exist, ORBITVIS will create it for the user. This key expects a string (no surrounding quotes).
 
 maxcaptures : This key specifies the maximum number of screenshots ORBITVIS should take before stopping. If this key is omitted, ORBITVIS will take as many screenshots as needed to get back to the vectors' initial configuration. However, if the vectors don't go back to their initial configuration (they get stuck in a cycle), ORBITVIS will indefinitely take screenshots. It is the user's responsibility to know beforehand which of the two cases will occur. This key expects an integer for its value.
 

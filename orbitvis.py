@@ -18,9 +18,14 @@ https://sodocumentation.net/python/topic/9050/ctypes
 https://stackoverflow.com/questions/11384015/
 
 https://docs.python.org/3.8/library/ctypes.html?highlight=ctypes#module-ctypes
+
+https://www.tutorialspoint.com/How-can-I-create-a-directory-if-it-does-not-exist-using-Python
 '''
 
 from math import floor
+
+from os.path import exists
+from os import makedirs
 
 from ctypes import *
 
@@ -116,6 +121,12 @@ for line in configData:
 		
 	elif splitline[0] == "sizeY":
 		windowDimensions[1] = int(splitline[1])
+		
+		
+#Checking to see if screenshots directory exists
+#If not, we'll make it for the user
+if not exists(CAPTUREPATH):
+	makedirs(CAPTUREPATH)
 
 
 vectorColors = []
@@ -336,11 +347,13 @@ pygame.display.set_caption(make_caption())
 
 if CAPTUREMODE and CMODE in [0, 2]:
 	#Generate initial plane
-	iterate_plane(iters)
 	draw_plane(windowDisplay)
 	pygame.display.update()
+	if CMODE == 1: #CMODE 1 iterates when draw_plane() is called
+		iterations += 1
+	
 	pygame.display.set_caption(make_caption())
-	pygame.image.save(windowDisplay, make_caption() + ".png")
+	pygame.image.save(windowDisplay, CAPTUREPATH + "/" + make_caption() + ".png")
 	
 	iterations += 1
 	if (maxcaptures != -1):
@@ -359,6 +372,14 @@ if CAPTUREMODE and CMODE in [0, 2]:
 			
 		if is_initial_state():
 			break
+			
+		#Allowing the user to quit whenever
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				if CMODE == 0:
+					iters.close()
+				pygame.quit()
+				quit()
 			
 	pygame.quit()
 	quit()
