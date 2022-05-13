@@ -125,7 +125,7 @@ for line in configData:
 		
 #Checking to see if screenshots directory exists
 #If not, we'll make it for the user
-if not exists(CAPTUREPATH):
+if not exists(CAPTUREPATH) and CAPTUREMODE:
 	makedirs(CAPTUREPATH)
 
 
@@ -416,6 +416,7 @@ else:
 					
 				elif event.key == pygame.K_DOWN:
 					pygame.image.save(windowDisplay, make_caption() + ".png")
+					print("Screenshot saved to working directory.")
 					
 
 			elif event.type == VIDEORESIZE: #When window is resized
