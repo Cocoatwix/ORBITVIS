@@ -33,9 +33,11 @@ import pygame
 from pygame.locals import VIDEORESIZE
 from pygame.locals import RESIZABLE
 
+#Optimise this later when I know what modules I need
+pygame.init()
+
 windowDimensions = [640, 480]
 
-#0 : Use .iteration file to traverse orbits (slower, but easier to set up)
 #1 : Use .so files to generate iterations on the fly (way, way faster)
 #2 : Same as #1, except current vector states are saved in vectorStates,
 #    reducing the C computation needed. (potentially faster than #1 for large moduli,
@@ -67,7 +69,6 @@ iterations = 0
 F = ((c_int * 2) * 2)
 MATRIXPATH = ""
 
-ITERPATH = ""
 OBJECTPATH = ""
 CAPTUREPATH = ""
 iters = None
@@ -97,9 +98,6 @@ for line in configData:
 		
 	elif splitline[0] == "objects":
 		OBJECTPATH = splitline[1]
-		
-	elif splitline[0] == "iters":
-		ITERPATH = splitline[1]
 		
 	elif splitline[0] == "hover":
 		HOVERMODE = True
@@ -143,83 +141,72 @@ vectorVisitors = [[[] for y in range(0, MODULUS)] for x in range(0, MODULUS)]
 #Holds the vector we're pointing at with the mouse
 vectorHover = [-1, -1]
 
-if CMODE in [1, 2]:
-	#Load C libraries, get function(s)
-	#libc = cdll.msvcrt
-	sharedC = CDLL(OBJECTPATH + "/orbitvis.so", "r")
-	C_step = sharedC.C_step
-	get_orbit_info = sharedC.get_orbit_info
-		
-	#Defining the parameter types for the function
-	C_step.argtypes = [c_int, c_int, POINTER((c_int * 2) * 2), c_int, c_int]
-	C_step.restype = c_int
+#Load C libraries, get function(s)
+#libc = cdll.msvcrt
+sharedC = CDLL(OBJECTPATH + "/orbitvis.so", "r")
+C_step = sharedC.C_step
+get_orbit_info = sharedC.get_orbit_info
 	
-	get_orbit_info.argtypes = [POINTER(c_int * 2), POINTER((c_int * 2) * 2), c_int]
-	get_orbit_info.restype = c_int
+#Defining the parameter types for the function
+C_step.argtypes = [c_int, c_int, POINTER((c_int * 2) * 2), c_int, c_int]
+C_step.restype = c_int
 
-	#Get update matrix data
-	try:
-		matrixData = open(MATRIXPATH)
-	except OSError as error:
-		print(error)
-		pygame.quit()
-		quit()
+get_orbit_info.argtypes = [POINTER(c_int * 2), POINTER((c_int * 2) * 2), c_int]
+get_orbit_info.restype = c_int
 
-	data = matrixData.readline()
-	data = matrixData.readline()
-	row1 = (c_int*2)(int(data.split(" ")[0]), int(data.split(" ")[1]))
-	data = matrixData.readline()
-	row2 = (c_int*2)(int(data.split(" ")[0]), int(data.split(" ")[1]))
+#Get update matrix data
+try:
+	matrixData = open(MATRIXPATH)
+except OSError as error:
+	print(error)
+	pygame.quit()
+	quit()
 
-	matrixData.close()
+data = matrixData.readline()
+data = matrixData.readline()
+row1 = (c_int*2)(int(data.split(" ")[0]), int(data.split(" ")[1]))
+data = matrixData.readline()
+row2 = (c_int*2)(int(data.split(" ")[0]), int(data.split(" ")[1]))
 
-	#This is our update matrix
-	F  = ((c_int * 2) * 2)(row1, row2)
+matrixData.close()
 
+#This is our update matrix
+F  = ((c_int * 2) * 2)(row1, row2)
 
-#Optimise this later when I know what modules I need
-pygame.init()
+#Initialise state of each vector if CMODE == 2
+if CMODE == 2:
+	vectorStates = [[[x, y] for y in range(0, MODULUS)] for x in range(0, MODULUS)]
+	
+#Create array of colors for each vector
+vectorColors = [[] for x in range(0, MODULUS)]
+for x in range(0, MODULUS):
+	for y in range(0, MODULUS):
+		vectorColors[x].append((255*x//MODULUS, 255*y//MODULUS, 0))
 
-gridSize         = min(windowDimensions)
-caption          = "ORBITVIS"
+gridSize = min(windowDimensions)
+caption  = "ORBITVIS"
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-BLUE = (50, 50, 255)
+BLUE  = (50, 50, 255)
 
 windowDisplay = pygame.display.set_mode(windowDimensions, RESIZABLE)
 windowCaption = pygame.display.set_caption(caption)
 icon = pygame.image.load("index.jpg")
 pygame.display.set_icon(icon)
-
-
-def step(iterData, vector):
-	'''Uses .iteration file to find given vector's
-	next step. Returns the found vector.'''
-	
-	lineNumber = 0
-	for x in range(1, len(vector)+1):
-		lineNumber += vector[-x]*MODULUS**(x-1)
-	
-	iterData.seek(0, 0)
-	[iterData.readline() for x in range(0, lineNumber)]
-	newVector = (iterData.readline().split(" "))[:-1]
-	return [int(x) for x in newVector]
-
 	
 def iterate_plane(iterData):
 	'''Iterates each vector in the plane, stores their state
-	in vectorStates.'''
+	in vectorStates.
+	
+	Currently only used with CMODE 2.'''
 	
 	for x in range(0, MODULUS):
 		for y in range(0, MODULUS):
-			if CMODE == 0:
-				vectorStates[x][y] = step(iterData, vectorStates[x][y])
-			elif CMODE == 2:
-				vectKey = C_step(vectorStates[x][y][0], vectorStates[x][y][1], F, MODULUS, 1)
-				vectY   = vectKey % MODULUS
-				vectX   = (vectKey - vectY)//MODULUS
-				vectorStates[x][y] = [vectX, vectY]
+			vectKey = C_step(vectorStates[x][y][0], vectorStates[x][y][1], F, MODULUS, 1)
+			vectY   = vectKey % MODULUS
+			vectX   = (vectKey - vectY)//MODULUS
+			vectorStates[x][y] = [vectX, vectY]
 				
 				
 def is_initial_state():
@@ -228,8 +215,19 @@ def is_initial_state():
 	
 	for x in range(0, MODULUS):
 		for y in range(0, MODULUS):
-			if vectorStates[x][y][0] != x or vectorStates[x][y][1] != y:
-				return False
+			if CMODE == 2:
+				if vectorStates[x][y][0] != x or vectorStates[x][y][1] != y:
+					return False
+			
+			elif CMODE == 1:
+				#Convert C output to vector, see if it's at it's original position
+				#iterations-1 ensures the original plane is output twice, like CMODE 2
+				vectorKey = C_step(x, y, pointer(F), MODULUS, iterations-1)
+				vectY = vectorKey % MODULUS
+				vectX = (vectorKey - vectY)//MODULUS
+				
+				if vectX != x or vectY != y:
+					return False
 				
 	return True
 
@@ -258,7 +256,7 @@ def draw_plane(surface):
 		for y in range(0, MODULUS):
 
 			#Getting appropriate vector for drawing the square
-			if CMODE in [0, 2]:
+			if CMODE == 2:
 				vectorOfInterest = vectorStates[x][y]
 				
 			elif CMODE == 1:
@@ -282,10 +280,11 @@ def draw_plane(surface):
 				colorY = vectorOfInterest[1]
 					
 			elif COLORMODE == 1:
-				if vectorStates[x][y][0] == MODULUS - 1:
-					extend[0] = 0
-				if vectorStates[x][y][1] == MODULUS - 1:
-					extend[1] = 0
+				if CMODE != 1: #Prevents indexing a list that doesn't exist in CMODE 1
+					if vectorStates[x][y][0] == MODULUS - 1:
+						extend[0] = 0
+					if vectorStates[x][y][1] == MODULUS - 1:
+						extend[1] = 0
 					
 				coordX = xStart + vectorOfInterest[0]*tileSize
 				coordY = yStart - (vectorOfInterest[1]+1)*tileSize
@@ -318,34 +317,15 @@ def make_caption():
 	return cap
 
 
-if CMODE == 0:
-	try:
-		iters = open(ITERPATH, "r")
-	except OSError as error:
-		print(error)
-		pygame.quit()
-		quit()
-	
-	
-#Initialise state of each vector, if needed
-if CMODE in [0, 2]:
-	vectorStates = [[[x, y] for y in range(0, MODULUS)] for x in range(0, MODULUS)]
-
-#Create array of colors for each vector
-vectorColors = [[] for x in range(0, MODULUS)]
-for x in range(0, MODULUS):
-	for y in range(0, MODULUS):
-		vectorColors[x].append((255*x//MODULUS, 255*y//MODULUS, 0))
-
 #This allows the starting iteration to be nonzero	
 for a in range(0, iterations):
-	if CMODE in [0, 2]:
+	if CMODE == 2:
 		iterate_plane(iters)
 	draw_plane(windowDisplay)
 pygame.display.set_caption(make_caption())
 
 
-if CAPTUREMODE and CMODE in [0, 2]:
+if CAPTUREMODE:
 	#Generate initial plane
 	draw_plane(windowDisplay)
 	pygame.display.update()
@@ -360,7 +340,8 @@ if CAPTUREMODE and CMODE in [0, 2]:
 		maxcaptures -= 1
 	
 	while (maxcaptures != 0):
-		iterate_plane(iters)
+		if CMODE == 2: #iterate_plane() is only used with CMODE 2
+			iterate_plane(iters)
 		draw_plane(windowDisplay)
 		pygame.display.update()
 		pygame.display.set_caption(make_caption())
@@ -369,15 +350,13 @@ if CAPTUREMODE and CMODE in [0, 2]:
 		iterations += 1
 		if (maxcaptures != -1):
 			maxcaptures -= 1
-			
+
 		if is_initial_state():
 			break
 			
 		#Allowing the user to quit whenever
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
-				if CMODE == 0:
-					iters.close()
 				pygame.quit()
 				quit()
 			
@@ -393,7 +372,7 @@ else:
 				if event.key == pygame.K_RIGHT: #Iterate
 					iterations += 1
 					
-					if CMODE in [0, 2]:
+					if CMODE == 2:
 						iterate_plane(iters)
 
 					draw_plane(windowDisplay)
@@ -401,7 +380,7 @@ else:
 					pygame.display.set_caption(make_caption())
 					
 				elif event.key == pygame.K_LEFT: #Reset to 0th iteration
-					if CMODE in [0, 2]:
+					if CMODE == 2:
 						iterations = 0
 						vectorStates = [[[x, y] for y in range(0, MODULUS)] for x in range(0, MODULUS)]
 						
@@ -450,7 +429,7 @@ else:
 			elif HOVERMODE and event.type == pygame.MOUSEBUTTONDOWN:
 				if vectorHover[0] != -1:
 					print("Vector clicked: <", vectorHover[0], ", ", vectorHover[1], ">", sep="")
-					if CMODE in [0, 2]:
+					if CMODE == 2:
 						print("Destination: <", vectorStates[vectorHover[0]][vectorHover[1]][0], 
 						", ", vectorStates[vectorHover[0]][vectorHover[1]][1], ">", sep="")
 						clickedVect = (c_int * 2)(vectorHover[0], vectorHover[1])
@@ -458,9 +437,6 @@ else:
 						
 					
 			elif event.type == pygame.QUIT:
-				if CMODE == 0:
-					iters.close()
-				
 				pygame.quit()
 				quit()
 	

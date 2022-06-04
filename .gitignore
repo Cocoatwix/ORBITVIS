@@ -9,7 +9,6 @@ doing.txt
 matrices/*.matrix
 to-orbitvis/*
 iterations/*.iteration
-*.png
 captures/*
 
 #Don't include PyGame Identifier files

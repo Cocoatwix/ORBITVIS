@@ -1,0 +1,4 @@
+This folder contains some example screenshots of what ORBITVIS can produce. The filenames of each image contain the matrix that was used, the modulus, and the iteration number in the following format:
+
+i<iteration>m<modulus>F<matrix's elements listed row wise>.png
+
