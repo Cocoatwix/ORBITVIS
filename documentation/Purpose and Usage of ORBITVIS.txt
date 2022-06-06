@@ -14,16 +14,16 @@ Mode 1 colours vectors based on which vectors become them on that iteration. For
 
 ~~~
 
-There are also two different computation modes for traversing orbits. These can be toggled by setting the CMODE variable at the top of orbitvis.py to either 1 or 2.
+There are also two different computation modes for traversing orbits. These can be toggled by setting the CMODE variable at the top of orbitvis.py to either "iterplane" or "iterstate".
 
-Mode 1 makes use of LINCELLAUT's codebase to generate orbits on the fly. In order to run mode 1, LINCELLAUT's header files, object files, update matrix file, and a shared library file all must be placed in their respective places within ORBITVIS' directory. As well, the modulus used must be manually input into ORBITVIS' .config file (see LINCELLAUT's documentation on .config files for more info).
+"iterplane" makes use of LINCELLAUT's codebase to generate orbits on the fly. In order to run "iterplane", LINCELLAUT's header files, object files, update matrix file, and a shared library file all must be placed in their respective places within ORBITVIS' directory. As well, the modulus used must be manually input into ORBITVIS' .config file (see LINCELLAUT's documentation on .config files for more info).
 
-Mode 2 calculates orbits on the fly using C like mode 1, but the vectors' current states are saved each generation. This way, only one iteration has to be calculated when incrementing or decrementing iterations. It requires the same prerequisites as mode 1. The left arrow button resets to iteration #0.
-For large moduli, mode 2 should perform faster than mode 1 at the cost of using more memory to store the current states of each vector. For smaller moduli, mode 2 is probably slower than mode 1 due to the increased time accessing Python lists.
+"iterstate" calculates orbits on the fly using C like "iterplane", but the vectors' current states are saved each generation. This way, only one iteration has to be calculated when incrementing or decrementing iterations. It requires the same prerequisites as "iterplane". The left arrow button resets to iteration #0.
+For large moduli, "iterstate" should perform faster than "iterplane" at the cost of using more memory to store the current states of each vector. For smaller moduli, "iterstate" is probably slower than "iterplane" due to the increased time accessing Python lists.
 
 ~~~
 
-Mode 2 allows you to gain some insights into the vectors you're looking at. If HOVERMODE is enabled (see documentation for .config file), then clicking on any of the vectors on screen will print out info regarding the vector you clicked, such as which vectors landed on it that iteration, where that vector travelled to that iteration, etc.
+"iterstate" allows you to gain some insights into the vectors you're looking at. If HOVERMODE is enabled (see documentation for .config file), then clicking on any of the vectors on screen will print out info regarding the vector you clicked, such as which vectors landed on it that iteration, where that vector travelled to that iteration, etc.
 
 ~~~
 
