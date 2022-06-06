@@ -130,11 +130,6 @@ for line in configData:
 #If not, we'll make it for the user
 if not exists(CAPTUREPATH) and CAPTUREMODE:
 	makedirs(CAPTUREPATH)
-	
-if CMODE == "iterall" and COLORMODE != 0:
-	print("CMODE \"iterall\" is currently only compatiable with COLORMODE 0.")
-	print("Switching to COLORMODE 0.")
-	COLORMODE = 0
 
 
 vectorColors = []
@@ -169,20 +164,25 @@ get_orbit_info_array.argtypes = [POINTER((c_int * 2) * 2), c_int]
 get_orbit_info_array.restype = c_int
 
 #Get update matrix data
-try:
-	matrixData = open(MATRIXPATH)
-except OSError as error:
-	print(error)
-	pygame.quit()
-	quit()
+if CMODE != "iterall":
+	try:
+		matrixData = open(MATRIXPATH)
+	except OSError as error:
+		print(error)
+		pygame.quit()
+		quit()
 
-matrixData.readline()
-data = matrixData.readline()
-row1 = (c_int*2)(int(data.split(" ")[0]), int(data.split(" ")[1]))
-data = matrixData.readline()
-row2 = (c_int*2)(int(data.split(" ")[0]), int(data.split(" ")[1]))
+	matrixData.readline()
+	data = matrixData.readline()
+	row1 = (c_int*2)(int(data.split(" ")[0]), int(data.split(" ")[1]))
+	data = matrixData.readline()
+	row2 = (c_int*2)(int(data.split(" ")[0]), int(data.split(" ")[1]))
 
-matrixData.close()
+	matrixData.close()
+	
+else:
+	row1 = (c_int*2)(0, 0)
+	row2 = (c_int*2)(0, 0)
 
 #This is our update matrix
 F  = ((c_int * 2) * 2)(row1, row2)
@@ -224,8 +224,12 @@ def iterate_plane():
 				vectorStates[x][y] = [vectX, vectY]
 				
 			elif CMODE == "iterall":
-				F[0][0] = x
-				F[1][1] = y #Does this work?
+				if COLORMODE == 0:
+					F[0][0] = x
+					F[1][1] = y
+				elif COLORMODE == 1:
+					F[0][1] = x
+					F[1][0] = y
 				vectKey = get_orbit_info_array(F, MODULUS)
 				vectTau = vectKey % (2*MODULUS)             #The two is from rows(F)
 				vectOmega = (vectKey - vectTau)//(2*MODULUS) #Same as above
@@ -302,34 +306,40 @@ def draw_plane(surface):
 				vectorOfInterest = [vectX, vectY]
 
 				
-			#Calculating the appropriate values for drawing the square
 			extend = [1, 1]
-			if COLORMODE == 0:
-				if x == MODULUS - 1:
-					extend[0] = 0
-				if y == MODULUS - 1:
-					extend[1] = 0
-				
+			if CMODE == "iterall":
 				coordX = xStart + x*tileSize
 				coordY = yStart - (y+1)*tileSize
-					
-			elif COLORMODE == 1:
-				if CMODE != "iterplane": #Prevents indexing a list that doesn't exist in CMODE "iterplane"
-					if vectorStates[x][y][0] == MODULUS - 1:
+				
+			#Calculating the appropriate values for drawing the square
+			else:
+				if COLORMODE == 0:
+					if x == MODULUS - 1:
 						extend[0] = 0
-					if vectorStates[x][y][1] == MODULUS - 1:
+					if y == MODULUS - 1:
 						extend[1] = 0
 					
-				coordX = xStart + vectorOfInterest[0]*tileSize
-				coordY = yStart - (vectorOfInterest[1]+1)*tileSize
+					coordX = xStart + x*tileSize
+					coordY = yStart - (y+1)*tileSize
+						
+				elif COLORMODE == 1:
+					if CMODE != "iterplane": #Prevents indexing a list that doesn't exist in CMODE "iterplane"
+						if vectorStates[x][y][0] == MODULUS - 1:
+							extend[0] = 0
+						if vectorStates[x][y][1] == MODULUS - 1:
+							extend[1] = 0
+						
+					coordX = xStart + vectorOfInterest[0]*tileSize
+					coordY = yStart - (vectorOfInterest[1]+1)*tileSize
 				
 			#Now determining the proper colours to use for the display
 			if CMODE == "iterall":
 				#Normalising colours
 				#MODULUS-1 prevents colorX and colorY from going over MODULUS
-				colorX = (vectorOfInterest[0]*(MODULUS-1))//maxInfo[0]
+				colorX = floor((vectorOfInterest[0]*(MODULUS-1))/maxInfo[0])
+				
 				if maxInfo[1] != 0:
-					colorY = (vectorOfInterest[1]*(MODULUS-1))//maxInfo[1]
+					colorY = floor((vectorOfInterest[1]*(MODULUS-1))/maxInfo[1])
 				else:
 					colorY = 0
 				
@@ -367,9 +377,14 @@ def make_caption():
 		str(F[0][0]) + str(F[0][1]) + str(F[1][0]) + str(F[1][1])
 		
 	else:
-		cap = caption + " - m" + str(MODULUS) + " from F0" + \
-		str(F[0][1]) + str(F[1][0]) + "0 to F" + str(MODULUS) + \
-		str(F[0][1]) + str(F[1][0]) + str(MODULUS)
+		if COLORMODE == 0:
+			cap = caption + " - m" + str(MODULUS) + " from F0" + \
+			str(F[0][1]) + str(F[1][0]) + "0 to F" + str(MODULUS) + \
+			str(F[0][1]) + str(F[1][0]) + str(MODULUS)
+		elif COLORMODE == 1:
+			cap = caption + " - m" + str(MODULUS) + " from F" + str(F[0][0]) + \
+			"00" + str(F[1][1]) + " to F" + str(F[0][0]) + str(MODULUS) + \
+			str(MODULUS) + str(F[1][1])
 	
 	return cap 
 
@@ -397,12 +412,21 @@ pygame.display.set_caption(make_caption())
 
 
 if CAPTUREMODE and CMODE != "iterall":
+	#First, calculate the cycle length and transient length
+	# so that ORBITVIS can stop taking screenshots once there's
+	# nothing new to see.
+	orbitKey   = get_orbit_info_array(F, MODULUS)
+	orbitTau   = orbitKey % (2*MODULUS)
+	orbitOmega = (orbitKey - orbitTau)//(2*MODULUS)
+	
+	#The +2 is to include one repeated image so the user knows a cycle happened,
+	# as well as the original plane
+	if maxcaptures > orbitTau + orbitOmega + 2 or maxcaptures < 0:
+		maxcaptures = orbitTau + orbitOmega + 2
+	
 	#Generate initial plane
 	draw_plane(windowDisplay)
 	pygame.display.update()
-	if CMODE == "iterplane": #CMODE "iterplane" iterates when draw_plane() is called
-		iterations += 1
-	
 	pygame.display.set_caption(make_caption())
 	pygame.image.save(windowDisplay, CAPTUREPATH + "/" + make_caption() + ".png")
 	
@@ -410,7 +434,7 @@ if CAPTUREMODE and CMODE != "iterall":
 	if (maxcaptures != -1):
 		maxcaptures -= 1
 	
-	while (maxcaptures != 0):
+	while (maxcaptures > 0):
 		if CMODE == "iterstate": #iterate_plane() is only used with CMODE "iterstate"
 			iterate_plane()
 		draw_plane(windowDisplay)
@@ -445,9 +469,15 @@ else:
 					
 					#When using iterall, arrow keys change F
 					if CMODE == "iterall":
-						F[0][1] += 1
-						if F[0][1] >= MODULUS:
-							F[0][1] -= MODULUS
+						if COLORMODE == 0:
+							F[0][1] += 1
+							if F[0][1] >= MODULUS:
+								F[0][1] -= MODULUS
+						
+						elif COLORMODE == 1:
+							F[1][1] += 1
+							if F[1][1] >= MODULUS:
+								F[1][1] -= MODULUS
 						
 					if CMODE in ["iterstate", "iterall"]:
 						iterate_plane()
@@ -467,9 +497,16 @@ else:
 							iterations = 0
 							
 					elif CMODE == "iterall":
-						F[0][1] -= 1
-						if F[0][1] < 0:
-							F[0][1] += MODULUS
+						if COLORMODE == 0:
+							F[0][1] -= 1
+							if F[0][1] < 0:
+								F[0][1] += MODULUS
+								
+						elif COLORMODE == 1:
+							F[1][1] -= 1
+							if F[1][1] < 0:
+								F[1][1] += MODULUS
+								
 						iterate_plane()
 						
 					draw_plane(windowDisplay)
@@ -478,9 +515,15 @@ else:
 					
 				elif event.key == pygame.K_DOWN:
 					if CMODE == "iterall": #Changing matrix in iterall mode
-						F[1][0] -= 1
-						if F[1][0] < 0:
-							F[1][0] += MODULUS
+						if COLORMODE == 0:
+							F[1][0] -= 1
+							if F[1][0] < 0:
+								F[1][0] += MODULUS
+								
+						elif COLORMODE == 1:
+							F[0][0] -= 1
+							if F[0][0] < 0:
+								F[0][0] += MODULUS
 							
 						iterate_plane()
 						draw_plane(windowDisplay)
@@ -489,9 +532,15 @@ else:
 						
 				elif event.key == pygame.K_UP:
 					if CMODE == "iterall": #Changing matrix in iterall mode
-						F[1][0] += 1
-						if F[1][0] >= MODULUS:
-							F[1][0] -= MODULUS
+						if COLORMODE == 0:
+							F[1][0] += 1
+							if F[1][0] >= MODULUS:
+								F[1][0] -= MODULUS
+								
+						elif COLORMODE == 1:
+							F[0][0] += 1
+							if F[0][0] >= MODULUS:
+								F[0][0] -= MODULUS
 							
 						iterate_plane()
 						draw_plane(windowDisplay)
@@ -543,8 +592,12 @@ else:
 				elif CMODE == "iterall":
 					if vectorHover[0] != -1:
 						print("Matrix clicked:")
-						print(vectorHover[0], F[0][1])
-						print(F[1][0], vectorHover[1])
+						if COLORMODE == 0:
+							print(vectorHover[0], F[0][1])
+							print(F[1][0], vectorHover[1])
+						elif COLORMODE == 1:
+							print(F[0][0], vectorHover[0])
+							print(vectorHover[1], F[1][1])
 						print("Cycle length:", vectorStates[vectorHover[0]][vectorHover[1]][0])
 						print("Transient length:", vectorStates[vectorHover[0]][vectorHover[1]][1])
 						print("")

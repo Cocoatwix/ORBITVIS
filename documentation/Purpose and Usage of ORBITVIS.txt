@@ -1,30 +1,42 @@
-The purpose of this program is to visualise the orbits of linear cellular automata (vectors being repeatedly multiplied by some matrix, mod some modulus). It does so by representing the set of all vectors mod some modulus as coloured squares on a grid. The colours then change for every iteration (every matrix multiplication computed on the vectors) to showcase how the vectors behave under the given setup. To run the program, run orbitvis.py directly. Make sure you have PyGame setup with your Python distribution (PyGame 1.9.6 was used for testing, though other versions should also work).
+The purpose of this program is to visualise the orbits of linear cellular automata--either vectors being repeatedly multiplied by some matrix, mod some modulus, or matrices being multiplied by themselves mod some modulus. It does so by representing the set of all vectors/matrices mod some modulus as coloured squares on a grid. The colours then change depending on the setup to showcase how the vectors/matrices behave. To run the program, run orbitvis.py directly. Make sure you have PyGame set up with your Python distribution (PyGame 1.9.6 was used for testing, though other versions should also work).
 
-The right arrow key computes the next iteration and updates the grid. This process can take a long time depending on the automata being visualised. The left arrow key resets to the first iteration (iteration #0) and updates the grid accordingly, OR computes the previous iteration and updates the grid, depending on which CMODE is active (see below).
+The main form of interaction with the program is by pressing the arrow keys, which perform different actions depending on the CMODE that's active (see below). These tasks can take a long time depending on the automata being visualised.
 
-The down arrow key takes a screenshot of the current plane and places it in the working directory.
-
-~~~
-
-There are currently two different colouring modes to use. They can be toggled by setting the COLORMODE variable at the top of orbitvis.py to either 0 or 1.
-
-Mode 0 colours vectors based on which vector they become on a certain iteration. For instance, if the vector <1, 1> becomes <2, 2> on iteration #1--iteration #0 being before any matrix multiplication happens--then the vector <1, 1> will be coloured the same as <2, 2> was on iteration #0.
-
-Mode 1 colours vectors based on which vectors become them on that iteration. For instance, if the vector <1, 1> becomes <2, 2> on iteration #1, then <2, 2> will be coloured the same as <1, 1> was on iteration #0. This mode is slightly problematic when used on automata with transient regions, as multiple vectors can become the same vector during an iteration. The program simply colours vectors based on the last calculated vector that becomes them.
+The S key takes a screenshot of the current plane and places it in the working directory.
 
 ~~~
 
-There are also two different computation modes for traversing orbits. These can be toggled by setting the CMODE variable at the top of orbitvis.py to either "iterplane" or "iterstate".
-
-"iterplane" makes use of LINCELLAUT's codebase to generate orbits on the fly. In order to run "iterplane", LINCELLAUT's header files, object files, update matrix file, and a shared library file all must be placed in their respective places within ORBITVIS' directory. As well, the modulus used must be manually input into ORBITVIS' .config file (see LINCELLAUT's documentation on .config files for more info).
-
-"iterstate" calculates orbits on the fly using C like "iterplane", but the vectors' current states are saved each generation. This way, only one iteration has to be calculated when incrementing or decrementing iterations. It requires the same prerequisites as "iterplane". The left arrow button resets to iteration #0.
-For large moduli, "iterstate" should perform faster than "iterplane" at the cost of using more memory to store the current states of each vector. For smaller moduli, "iterstate" is probably slower than "iterplane" due to the increased time accessing Python lists.
+In order to run ORBITVIS in its current form, LINCELLAUT's object files, an update matrix file, and a shared library file all must be placed in ORBITVIS' directory, and the path to the folder containing these files must be specified in the .config file. Otherwise, ORBITVIS won't be able to perform any of the calculations required for generating its visualisations.
 
 ~~~
 
-"iterstate" allows you to gain some insights into the vectors you're looking at. If HOVERMODE is enabled (see documentation for .config file), then clicking on any of the vectors on screen will print out info regarding the vector you clicked, such as which vectors landed on it that iteration, where that vector travelled to that iteration, etc.
+There are currently two different colouring modes to use. They can be toggled by setting the "colormode" key in the .config file (see .config specs file).
+
+For iterplane and iterstate modes, mode 0 colours vectors based on which vector they become on a certain iteration. For instance, if the vector <1, 1> becomes <2, 2> on iteration #1--iteration #0 being before any matrix multiplication happens--then the vector <1, 1> will be coloured the same as <2, 2> was on iteration #0.
+
+For iterall, mode 0 means the off-diagonal entries of the update matrix are changed whenever the arrow keys are pressed. Up/down changes the bottom left entry, while left/right will change the top right. The diagonal entries are incremented across each screen through all possible values.
+
+For iterplane and iterstate modes, mode 1 colours vectors based on which vectors become them on that iteration. For instance, if the vector <1, 1> becomes <2, 2> on iteration #1, then <2, 2> will be coloured the same as <1, 1> was on iteration #0. This mode is slightly problematic when used on automata with transient regions, as multiple vectors can become the same vector during an iteration. The program simply colours vectors based on the last calculated vector that becomes them.
+
+For iterall, mode 1 means the diagonal entries of the update matrix are changed whenever the arrow keys are pressed. Up/down changes the top left entry, while left/right will change the bottom right. The off-diagonal entries are incremented across each screen through all possible values.
 
 ~~~
 
-If CAPTUREMODE is enabled (see documentation for .config file), ORBITVIS will generate every possible plane with the given settings and save them as screenshots. ORBITVIS knows to automatically stop generating screenshots when the vectors return to their initial state. HOWEVER, ORBITVIS makes no attempt to stop taking screenshots if it gets stuck in a cycle that does not reset the plane back to its initial configuration. It is the user's responsibility to set the MAXCAPTURES variable (via the .config file) to cap the number of desired screenshots in this case.
+There are three different computation modes for traversing orbits. These can be toggled with the "cmode" key in the .config file. 
+
+"iterplane" makes use of LINCELLAUT's codebase to generate vector orbits on the fly. The modulus used must be manually input into ORBITVIS' .config file (see LINCELLAUT's documentation on .config files for more info). The right arrow key increases the iteration count by 1, while the left arrow key decreases the iteration count by one.
+
+"iterstate" calculates orbits on the fly like iterplane, but the vectors' current states are saved each generation. This way, only one iteration has to be calculated when incrementing or decrementing iterations. The left arrow button resets to iteration #0, while the right arrow key behaves the same as it did for iterplane.
+For large moduli, iterstate should perform faster than iterplane at the cost of using more memory to store the current states of each vector. For smaller moduli, iterstate is probably slower than iterplane due to the increased time accessing Python lists.
+
+"iterall" is a completely different visualisation from the previous two. Iterall calculates the transient and cycle lengths for ALL possible matrices, and represents each matrix's values as a coloured square. The arrow keys for this mode are used to change the range of matrices displayed to the screen. By default, the diagonal entries of the update matrix are incremented on each screen as you move along the orthogonal axes. The off diagonal entries remain fixed on each screen. Pressing the up/down keys will change the bottom left entry of the matrix, while the left/right keys will change the top right entry. This behaviour changes depending on the COLORMODE. 
+Unlike iterplane and iterstate, iterall behaves the same, regardless of the COLORMODE (currently).
+
+~~~
+
+Iterstate and iterall allow you to gain some insights into the vectors/matrices you're looking at. If HOVERMODE is enabled (see documentation for .config file), then clicking on any of the vectors on screen will print out info regarding the vector you clicked, such as which vectors landed on it that iteration, where the vector travelled to that iteration, etc.
+
+~~~
+
+If CAPTUREMODE is enabled (see documentation for .config file), ORBITVIS will generate every possible plane with the given settings and save them as screenshots. ORBITVIS knows to automatically stop generating screenshots when the vectors fall into a cycle. If, however, the user only wants to generate a few screenshots and not the entire cycle, the "maxcaptures" key can be set in the .config file 
+CAPTUREMODE currently does not work with iterall mode. 
