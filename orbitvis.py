@@ -23,6 +23,7 @@ https://www.tutorialspoint.com/How-can-I-create-a-directory-if-it-does-not-exist
 '''
 
 from math import floor
+from math import log
 
 from os.path import exists
 from os import makedirs
@@ -44,14 +45,17 @@ windowDimensions = [640, 480]
 #    though requires more memory).
 # "iterall"   : Iterates every possible matrix under the given modulus and displays
 #    coloured squares based on the transient and cycle lengths of each matrix.
-
 CMODE = "iterplane"
 
-#0 : Colour based on where its initial vector lands on that iteration
-#1 : Colour based on which vector goes to that spot
+#repaint  : Colour based on where its initial vector lands on that iteration
+#drag     : Colour based on which vector goes to that spot
+#relative : Colour iterall tiles based on the relative cycle and translent lengths of others on the same screen
+#rellog   : Same as above, but with a logarithmic curve added to the colouring
+COLORMODE = "drag"
 
-#Default COLORMODE is #1
-COLORMODE = 1
+#diag    : For iterall, arrow keys increment the diagonal entries
+#nondiag : For iterall, arrow keys increment nondiagonal entries
+ARRANGEMENT = "diag"
 
 #Says whether we can click on vectors to obtain information about them
 #Also activates hovering over vectors with the mouse
@@ -96,7 +100,10 @@ for line in configData:
 		CMODE = splitline[1]
 		
 	elif splitline[0] == "colormode":
-		COLORMODE = int(splitline[1])
+		COLORMODE = splitline[1]
+		
+	elif splitline[0] == "arrangement":
+		ARRANGEMENT = splitline[1]
 		
 	elif splitline[0] == "update":
 		MATRIXPATH = splitline[1]
@@ -130,6 +137,17 @@ for line in configData:
 #If not, we'll make it for the user
 if not exists(CAPTUREPATH) and CAPTUREMODE:
 	makedirs(CAPTUREPATH)
+	
+#Making sure we're using compatiable colouring modes
+if CMODE in ["iterstate", "iterplane"] and COLORMODE not in ["repaint", "drag"]:
+	print("Selected COLORMODE isn't compatiable with chosen CMODE.")
+	print("Defaulting COLORMODE to drag...")
+	COLORMODE = "drag"
+	
+elif CMODE in ["iterall"] and COLORMODE not in ["relative", "rellog"]:
+	print("Selected COLORMODE isn't compatiable with chosen CMODE.")
+	print("Defaulting COLORMODE to rellog...")
+	COLORMODE = "rellog"
 
 
 vectorColors = []
@@ -224,10 +242,10 @@ def iterate_plane():
 				vectorStates[x][y] = [vectX, vectY]
 				
 			elif CMODE == "iterall":
-				if COLORMODE == 0:
+				if ARRANGEMENT == "nondiag":
 					F[0][0] = x
 					F[1][1] = y
-				elif COLORMODE == 1:
+				elif ARRANGEMENT == "diag":
 					F[0][1] = x
 					F[1][0] = y
 				vectKey = get_orbit_info_array(F, MODULUS)
@@ -313,7 +331,7 @@ def draw_plane(surface):
 				
 			#Calculating the appropriate values for drawing the square
 			else:
-				if COLORMODE == 0:
+				if COLORMODE == "repaint":
 					if x == MODULUS - 1:
 						extend[0] = 0
 					if y == MODULUS - 1:
@@ -322,7 +340,7 @@ def draw_plane(surface):
 					coordX = xStart + x*tileSize
 					coordY = yStart - (y+1)*tileSize
 						
-				elif COLORMODE == 1:
+				elif COLORMODE == "drag":
 					if CMODE != "iterplane": #Prevents indexing a list that doesn't exist in CMODE "iterplane"
 						if vectorStates[x][y][0] == MODULUS - 1:
 							extend[0] = 0
@@ -333,24 +351,31 @@ def draw_plane(surface):
 					coordY = yStart - (vectorOfInterest[1]+1)*tileSize
 				
 			#Now determining the proper colours to use for the display
-			if CMODE == "iterall":
-				#Normalising colours
-				#MODULUS-1 prevents colorX and colorY from going over MODULUS
-				colorX = floor((vectorOfInterest[0]*(MODULUS-1))/maxInfo[0])
+			
+			#MODULUS-1 prevents colorX and colorY from going over MODULUS
+			if COLORMODE == "relative":
+				colorX = (vectorOfInterest[0]*(MODULUS-1))//maxInfo[0]
 				
 				if maxInfo[1] != 0:
-					colorY = floor((vectorOfInterest[1]*(MODULUS-1))/maxInfo[1])
+					colorY = (vectorOfInterest[1]*(MODULUS-1))//maxInfo[1]
 				else:
 					colorY = 0
 				
-			else:
-				if COLORMODE == 0:
-					colorX = vectorOfInterest[0]
-					colorY = vectorOfInterest[1]
-					
-				elif COLORMODE == 1:
-					colorX = x
-					colorY = y
+			elif COLORMODE == "rellog":
+				colorX = floor(log(vectorOfInterest[0]+1, maxInfo[0]+1)*(MODULUS-1))
+				
+				if maxInfo[1] != 0:
+					colorY = floor(log(vectorOfInterest[1]+1, maxInfo[1]+1)*(MODULUS-1))
+				else:
+					colorY = 0
+				
+			elif COLORMODE == "repaint":
+				colorX = vectorOfInterest[0]
+				colorY = vectorOfInterest[1]
+				
+			elif COLORMODE == "drag":
+				colorX = x
+				colorY = y
 
 			#Finally, we draw the square
 			pygame.draw.rect(
@@ -377,11 +402,11 @@ def make_caption():
 		str(F[0][0]) + str(F[0][1]) + str(F[1][0]) + str(F[1][1])
 		
 	else:
-		if COLORMODE == 0:
+		if ARRANGEMENT == "nondiag":
 			cap = caption + " - m" + str(MODULUS) + " from F0" + \
 			str(F[0][1]) + str(F[1][0]) + "0 to F" + str(MODULUS) + \
 			str(F[0][1]) + str(F[1][0]) + str(MODULUS)
-		elif COLORMODE == 1:
+		elif ARRANGEMENT == "diag":
 			cap = caption + " - m" + str(MODULUS) + " from F" + str(F[0][0]) + \
 			"00" + str(F[1][1]) + " to F" + str(F[0][0]) + str(MODULUS) + \
 			str(MODULUS) + str(F[1][1])
@@ -469,12 +494,12 @@ else:
 					
 					#When using iterall, arrow keys change F
 					if CMODE == "iterall":
-						if COLORMODE == 0:
+						if ARRANGEMENT == "nondiag":
 							F[0][1] += 1
 							if F[0][1] >= MODULUS:
 								F[0][1] -= MODULUS
 						
-						elif COLORMODE == 1:
+						elif ARRANGEMENT == "diag":
 							F[1][1] += 1
 							if F[1][1] >= MODULUS:
 								F[1][1] -= MODULUS
@@ -497,12 +522,12 @@ else:
 							iterations = 0
 							
 					elif CMODE == "iterall":
-						if COLORMODE == 0:
+						if ARRANGEMENT == "nondiag":
 							F[0][1] -= 1
 							if F[0][1] < 0:
 								F[0][1] += MODULUS
 								
-						elif COLORMODE == 1:
+						elif ARRANGEMENT == "diag":
 							F[1][1] -= 1
 							if F[1][1] < 0:
 								F[1][1] += MODULUS
@@ -515,12 +540,12 @@ else:
 					
 				elif event.key == pygame.K_DOWN:
 					if CMODE == "iterall": #Changing matrix in iterall mode
-						if COLORMODE == 0:
+						if ARRANGEMENT == "nondiag":
 							F[1][0] -= 1
 							if F[1][0] < 0:
 								F[1][0] += MODULUS
 								
-						elif COLORMODE == 1:
+						elif ARRANGEMENT == "diag":
 							F[0][0] -= 1
 							if F[0][0] < 0:
 								F[0][0] += MODULUS
@@ -532,12 +557,12 @@ else:
 						
 				elif event.key == pygame.K_UP:
 					if CMODE == "iterall": #Changing matrix in iterall mode
-						if COLORMODE == 0:
+						if ARRANGEMENT == "nondiag":
 							F[1][0] += 1
 							if F[1][0] >= MODULUS:
 								F[1][0] -= MODULUS
 								
-						elif COLORMODE == 1:
+						elif ARRANGEMENT == "diag":
 							F[0][0] += 1
 							if F[0][0] >= MODULUS:
 								F[0][0] -= MODULUS
@@ -592,10 +617,10 @@ else:
 				elif CMODE == "iterall":
 					if vectorHover[0] != -1:
 						print("Matrix clicked:")
-						if COLORMODE == 0:
+						if ARRANGEMENT == "nondiag":
 							print(vectorHover[0], F[0][1])
 							print(F[1][0], vectorHover[1])
-						elif COLORMODE == 1:
+						elif ARRANGEMENT == "diag":
 							print(F[0][0], vectorHover[0])
 							print(vectorHover[1], F[1][1])
 						print("Cycle length:", vectorStates[vectorHover[0]][vectorHover[1]][0])

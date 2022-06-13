@@ -10,13 +10,9 @@ In order to run ORBITVIS in its current form, LINCELLAUT's object files, an upda
 
 ~~~
 
-There are currently two different colouring modes to use. They can be toggled by setting the "colormode" key in the .config file (see .config specs file).
-
-For iterplane and iterstate modes, mode 0 colours vectors based on which vector they become on a certain iteration. For instance, if the vector <1, 1> becomes <2, 2> on iteration #1--iteration #0 being before any matrix multiplication happens--then the vector <1, 1> will be coloured the same as <2, 2> was on iteration #0.
+There are multiple different colouring modes to use with ORBITVIS, each having specific use cases. They can be toggled by setting the "colormode" key in the .config file (see .config specs file). Information regarding these colour modes can be found in the "Colour Modes" documentation file.
 
 For iterall, mode 0 means the off-diagonal entries of the update matrix are changed whenever the arrow keys are pressed. Up/down changes the bottom left entry, while left/right will change the top right. The diagonal entries are incremented across each screen through all possible values.
-
-For iterplane and iterstate modes, mode 1 colours vectors based on which vectors become them on that iteration. For instance, if the vector <1, 1> becomes <2, 2> on iteration #1, then <2, 2> will be coloured the same as <1, 1> was on iteration #0. This mode is slightly problematic when used on automata with transient regions, as multiple vectors can become the same vector during an iteration. The program simply colours vectors based on the last calculated vector that becomes them.
 
 For iterall, mode 1 means the diagonal entries of the update matrix are changed whenever the arrow keys are pressed. Up/down changes the top left entry, while left/right will change the bottom right. The off-diagonal entries are incremented across each screen through all possible values.
 

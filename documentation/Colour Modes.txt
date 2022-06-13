@@ -1,0 +1,11 @@
+There are various different ways ORBITVIS can visualise LCA systems. Each colour mode can be used to gauge the information generated in a different way, highlighting different aspects based on what you find important at any given time.
+
+"repaint" : Repaint is used with CMODEs "iterplane" and "iterstate". After completing an iteration of the given update matrix, repaint will look at where each vector lands and colour that vector based on where it landed. For instance, if a vector iterates to <0, 0>, that vector will then be coloured black (since black is the colour intially given to <0, 0>).
+
+"drag" : Drag is used with CMODEs "iterplane" and "iterstate". After completing an iteration of the given update matrix, drag will see where each vector lands and drag that vector's initial colour to where it landed. For instance, if a vector iterates to <0, 0>, then that vector's colour will be placed on <0, 0>, replacing <0, 0>'s initial black colouring.
+
+Note that drag has the potential to place multiple vector colours on the same tile, leading to overlap. ORBITVIS will simply display the vector which was dragged last to a particular tile. Drag can also create empty tiles (whenever a given LCA has transient regions). These will be displayed as plain white tiles, signifying that no vector iterated to that particular tile.
+
+"relative" : Relative is used with CMODE "iterall". It colours each tile (which represents an individual LCA system) based on the values of all other LCAs on the same screen. For example, the LCA with the highest cycle length will have the highest red value, while the LCA with the highest transient length will have the highest green value.
+
+"rellog" : Same as relative colouring, except the colours are placed on a logarithmic curve. This allows for more subtle differences in lower-valued cycle lengths and transient lengths to become visible at the cost of making higher-valued cycle lengths and transient lengths less distinguishable. 
