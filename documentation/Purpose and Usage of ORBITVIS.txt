@@ -10,11 +10,15 @@ In order to run ORBITVIS in its current form, LINCELLAUT's object files, an upda
 
 ~~~
 
-There are multiple different colouring modes to use with ORBITVIS, each having specific use cases. They can be toggled by setting the "colormode" key in the .config file (see .config specs file). Information regarding these colour modes can be found in the "Colour Modes" documentation file.
+There are multiple different colouring modes to use with ORBITVIS, each having specific use cases. They can be toggled by setting the "colormode" and "colortransient" keys in the .config file (see .config specs file). Information regarding these colour modes can be found in the "Colour Modes" documentation file.
 
-For iterall, mode 0 means the off-diagonal entries of the update matrix are changed whenever the arrow keys are pressed. Up/down changes the bottom left entry, while left/right will change the top right. The diagonal entries are incremented across each screen through all possible values.
+~~~
 
-For iterall, mode 1 means the diagonal entries of the update matrix are changed whenever the arrow keys are pressed. Up/down changes the top left entry, while left/right will change the bottom right. The off-diagonal entries are incremented across each screen through all possible values.
+ORBITVIS also has a couple different ARRANGEMENT values, which dictate how matrices are iterated through from screen to screen on iterall mode.
+
+"nondiag" : the off-diagonal entries of the update matrix are changed whenever the arrow keys are pressed. Up/down changes the bottom left entry, while left/right will change the top right. The diagonal entries are incremented across each screen through all possible values.
+
+"diag" : the diagonal entries of the update matrix are changed whenever the arrow keys are pressed. Up/down changes the top left entry, while left/right will change the bottom right. The off-diagonal entries are incremented across each screen through all possible values.
 
 ~~~
 
@@ -25,8 +29,7 @@ There are three different computation modes for traversing orbits. These can be 
 "iterstate" calculates orbits on the fly like iterplane, but the vectors' current states are saved each generation. This way, only one iteration has to be calculated when incrementing or decrementing iterations. The left arrow button resets to iteration #0, while the right arrow key behaves the same as it did for iterplane.
 For large moduli, iterstate should perform faster than iterplane at the cost of using more memory to store the current states of each vector. For smaller moduli, iterstate is probably slower than iterplane due to the increased time accessing Python lists.
 
-"iterall" is a completely different visualisation from the previous two. Iterall calculates the transient and cycle lengths for ALL possible matrices, and represents each matrix's values as a coloured square. The arrow keys for this mode are used to change the range of matrices displayed to the screen. By default, the diagonal entries of the update matrix are incremented on each screen as you move along the orthogonal axes. The off diagonal entries remain fixed on each screen. Pressing the up/down keys will change the bottom left entry of the matrix, while the left/right keys will change the top right entry. This behaviour changes depending on the COLORMODE. 
-Unlike iterplane and iterstate, iterall behaves the same, regardless of the COLORMODE (currently).
+"iterall" is a completely different visualisation from the previous two. Iterall calculates the transient and cycle lengths for ALL possible matrices, and represents each matrix's values as a coloured square. The arrow keys for this mode are used to change the range of matrices displayed to the screen. By default, the diagonal entries of the update matrix are incremented on each screen as you move along the orthogonal axes. The off diagonal entries remain fixed on each screen. Pressing the up/down keys will change the bottom left entry of the matrix, while the left/right keys will change the top right entry. This behaviour changes depending on the value of ARRANGEMENT. 
 
 ~~~
 

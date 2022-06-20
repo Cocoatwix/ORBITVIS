@@ -9,3 +9,12 @@ Note that drag has the potential to place multiple vector colours on the same ti
 "relative" : Relative is used with CMODE "iterall". It colours each tile (which represents an individual LCA system) based on the values of all other LCAs on the same screen. For example, the LCA with the highest cycle length will have the highest red value, while the LCA with the highest transient length will have the highest green value.
 
 "rellog" : Same as relative colouring, except the colours are placed on a logarithmic curve. This allows for more subtle differences in lower-valued cycle lengths and transient lengths to become visible at the cost of making higher-valued cycle lengths and transient lengths less distinguishable. 
+
+
+Specific to "iterall", the key "colortransient" can be set to decide what effect transient lengths have on colouring the various systems visualised.
+
+mixed : This value will make colouring take into account both cycle and transient lengths when visualising systems.
+
+solo : This value will make colouring take into account only transient lengths when visualising systems.
+
+none : This value will make colouring take into account only cycle lengths when visualising systems.

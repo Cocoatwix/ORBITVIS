@@ -53,6 +53,11 @@ CMODE = "iterplane"
 #rellog   : Same as above, but with a logarithmic curve added to the colouring
 COLORMODE = "drag"
 
+#mixed : Matrices are coloured based on cycle lengths and transient lengths
+#solo  : Matrices are coloured based only on transient lengths
+#none  : Matrices are coloured based only on cycle lengths
+COLORTRANSIENT = "mixed"
+
 #diag    : For iterall, arrow keys increment the diagonal entries
 #nondiag : For iterall, arrow keys increment nondiagonal entries
 ARRANGEMENT = "diag"
@@ -104,6 +109,9 @@ for line in configData:
 		
 	elif splitline[0] == "arrangement":
 		ARRANGEMENT = splitline[1]
+		
+	elif splitline[0] == "colortransient":
+		COLORTRANSIENT = splitline[1]
 		
 	elif splitline[0] == "update":
 		MATRIXPATH = splitline[1]
@@ -354,24 +362,25 @@ def draw_plane(surface):
 			
 			#MODULUS-1 prevents colorX and colorY from going over MODULUS
 			if COLORMODE == "relative":
-				colorX = (vectorOfInterest[0]*(MODULUS-1))//maxInfo[0]
+				if COLORTRANSIENT != "solo":
+					colorX = (vectorOfInterest[0]*(MODULUS-1))//maxInfo[0]
 				
-				if maxInfo[1] != 0:
+				if maxInfo[1] != 0 and COLORTRANSIENT != "none":
 					colorY = (vectorOfInterest[1]*(MODULUS-1))//maxInfo[1]
-				else:
-					colorY = 0
+					
 				
 			elif COLORMODE == "rellog":
-				colorX = floor(log(vectorOfInterest[0]+1, maxInfo[0]+1)*(MODULUS-1))
+				if COLORTRANSIENT != "solo":
+					colorX = floor(log(vectorOfInterest[0]+1, maxInfo[0]+1)*(MODULUS-1))
 				
-				if maxInfo[1] != 0:
+				if maxInfo[1] != 0 and COLORTRANSIENT != "none":
 					colorY = floor(log(vectorOfInterest[1]+1, maxInfo[1]+1)*(MODULUS-1))
-				else:
-					colorY = 0
+					
 				
 			elif COLORMODE == "repaint":
 				colorX = vectorOfInterest[0]
 				colorY = vectorOfInterest[1]
+				
 				
 			elif COLORMODE == "drag":
 				colorX = x
