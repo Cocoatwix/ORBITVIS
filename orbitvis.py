@@ -45,7 +45,7 @@ windowDimensions = [640, 480]
 #    though requires more memory).
 # "iterall"   : Iterates every possible matrix under the given modulus and displays
 #    coloured squares based on the transient and cycle lengths of each matrix.
-CMODE = "iterplane"
+CMODE = "iterstate"
 
 #repaint  : Colour based on where its initial vector lands on that iteration
 #drag     : Colour based on which vector goes to that spot
@@ -445,32 +445,28 @@ for a in range(0, iterations):
 pygame.display.set_caption(make_caption())
 
 
-if CAPTUREMODE and CMODE != "iterall":
+if CAPTUREMODE:
 	#First, calculate the cycle length and transient length
 	# so that ORBITVIS can stop taking screenshots once there's
-	# nothing new to see.
-	orbitKey   = get_orbit_info_array(F, MODULUS)
-	orbitTau   = orbitKey % (2*MODULUS)
-	orbitOmega = (orbitKey - orbitTau)//(2*MODULUS)
+	# nothing new to see (only if CMODE != "iterall").
 	
-	#The +2 is to include one repeated image so the user knows a cycle happened,
-	# as well as the original plane
-	if maxcaptures > orbitTau + orbitOmega + 2 or maxcaptures < 0:
-		maxcaptures = orbitTau + orbitOmega + 2
+	#These parameters aren't needed if we're iterating the entire matrix space
+	if CMODE != "iterall":
+		orbitKey   = get_orbit_info_array(F, MODULUS)
+		orbitTau   = orbitKey % (2*MODULUS)
+		orbitOmega = (orbitKey - orbitTau)//(2*MODULUS)
 	
-	#Generate initial plane
-	draw_plane(windowDisplay)
-	pygame.display.update()
-	pygame.display.set_caption(make_caption())
-	pygame.image.save(windowDisplay, CAPTUREPATH + "/" + make_caption() + ".png")
-	
-	iterations += 1
-	if (maxcaptures != -1):
-		maxcaptures -= 1
-	
-	while (maxcaptures > 0):
-		if CMODE == "iterstate": #iterate_plane() is only used with CMODE "iterstate"
+		#The +2 is to include one repeated image so the user knows a cycle happened,
+		# as well as the original plane
+		if maxcaptures > orbitTau + orbitOmega + 2 or maxcaptures < 0:
+			maxcaptures = orbitTau + orbitOmega + 2
+
+
+	#Loop until there're no more pictures to take
+	while maxcaptures > 0 or maxcaptures == -1:
+		if CMODE in ["iterstate", "iterall"] and iterations != 0: #iterate_plane() is only used with CMODE "iterstate"
 			iterate_plane()
+
 		draw_plane(windowDisplay)
 		pygame.display.update()
 		pygame.display.set_caption(make_caption())
@@ -479,9 +475,28 @@ if CAPTUREMODE and CMODE != "iterall":
 		iterations += 1
 		if (maxcaptures != -1):
 			maxcaptures -= 1
-
-		if is_initial_state():
-			break
+				
+		if CMODE != "iterall":
+			if is_initial_state() and iterations != 1:
+				break
+				
+		#Iterate to next screen
+		else:
+			if ARRANGEMENT == "nondiag":
+				F[0][1] += 1
+				if F[0][1] >= MODULUS:
+					F[0][1] -= MODULUS
+					F[1][0] += 1
+					if F[1][0] >= MODULUS:
+						break
+			
+			elif ARRANGEMENT == "diag":
+				F[1][1] += 1
+				if F[1][1] >= MODULUS:
+					F[1][1] -= MODULUS
+					F[0][0] += 1
+					if F[0][0] >= MODULUS:
+						break
 			
 		#Allowing the user to quit whenever
 		for event in pygame.event.get():

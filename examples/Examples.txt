@@ -2,3 +2,6 @@ This folder contains some example screenshots of what ORBITVIS can produce. The 
 
 i<iteration>m<modulus>F<matrix's elements listed row wise>.png
 
+If the screenshot was taken using "iterall" mode, then the file format will use the following format:
+
+m<modulus> from F<starting matrix elements listed row wise> to F<ending matrix elements listed row wise>.png

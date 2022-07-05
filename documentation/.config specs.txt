@@ -2,9 +2,9 @@ The following lists the key-value pairs which can be used for ORBITVIS' .config 
 
 mod : This key specifies the modulus used in the given linear cellular automaton. his key expects an integer as its value.
 
-cmode : This key specifies which CMODE to use (see ORBITVIS documentation for valid modes). If omitted, the default CMODE is "iterplane". This key expects a non-quoted string as its value.
+cmode : This key specifies which CMODE to use (see ORBITVIS documentation for valid modes). If omitted, the default CMODE is "iterstate". This key expects a non-quoted string as its value.
 
-colormode : This key specifies which COLORMODE to use (see ORBITVIS documentation for valid modes). If omitted, the default COLORMODE is 1. This key expects and integer as its value.
+colormode : This key specifies which COLORMODE to use (see ORBITVIS documentation for valid modes). If omitted, the default COLORMODE is "drag". This key expects a non-quoted string as its value.
 
 arrangement : This key specifies how the matrices are iterated from screen to screen under "iterall" mode. If omitted, the default mode is "diag". This key expects a non-quoted string as its value.
 
@@ -20,7 +20,7 @@ capture : This key specifies whether to switch to CAPTUREMODE, where a screensho
 
 screenshots : This key specifies the directory to place screenshots when in CAPTUREMODE. If the directory does not exist, ORBITVIS will create it for the user. This key expects a string (no surrounding quotes).
 
-maxcaptures : This key specifies the maximum number of screenshots ORBITVIS should take before stopping. If this key is omitted, ORBITVIS will take as many screenshots as needed to get back to the vectors' initial configuration. However, if the vectors don't go back to their initial configuration (they get stuck in a cycle), ORBITVIS will indefinitely take screenshots. It is the user's responsibility to know beforehand which of the two cases will occur. This key expects an integer for its value.
+maxcaptures : This key specifies the maximum number of screenshots ORBITVIS should take before stopping. If this key is omitted, ORBITVIS will take as many screenshots as needed to get back to the vectors' initial configuration. If the vectors don't go back to their initial configuration (the system has a transient region), ORBITVIS will take as many screenshots as needed to capture all unique configurations of the module. This key expects an integer for its value.
 
 inititer : This key specifies the number of iterations to start on. Essentially, the program will iterate the given number of times before displaying the plane. If omitted, this value defaults to 0. This key expects an integer for its value.
 

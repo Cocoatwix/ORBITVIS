@@ -37,5 +37,4 @@ Iterstate and iterall allow you to gain some insights into the vectors/matrices 
 
 ~~~
 
-If CAPTUREMODE is enabled (see documentation for .config file), ORBITVIS will generate every possible plane with the given settings and save them as screenshots. ORBITVIS knows to automatically stop generating screenshots when the vectors fall into a cycle. If, however, the user only wants to generate a few screenshots and not the entire cycle, the "maxcaptures" key can be set in the .config file 
-CAPTUREMODE currently does not work with iterall mode. 
+If CAPTUREMODE is enabled (see documentation for .config file), ORBITVIS will generate every possible configuration with the given settings and save them as screenshots. ORBITVIS knows to automatically stop generating screenshots when the vectors fall into a cycle. If, however, the user only wants to generate a few screenshots and not the entire cycle, the "maxcaptures" key can be set in the .config file.
