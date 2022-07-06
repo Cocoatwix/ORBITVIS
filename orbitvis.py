@@ -179,6 +179,8 @@ C_step = sharedC.C_step
 get_orbit_info = sharedC.get_orbit_info
 get_orbit_info_array = sharedC.get_orbit_info_array
 
+C_iterate_matrix = sharedC.C_iterate_matrix
+
 #Defining the parameter types for the functions
 C_step.argtypes = [c_int, c_int, POINTER((c_int * 2) * 2), c_int, c_int]
 C_step.restype = c_int
@@ -188,6 +190,9 @@ get_orbit_info.restype = c_int
 
 get_orbit_info_array.argtypes = [POINTER((c_int * 2) * 2), c_int]
 get_orbit_info_array.restype = c_int
+
+C_iterate_matrix.argtypes = [POINTER((c_int * 2) * 2), POINTER((c_int * 2) * 2), c_int]
+C_iterate_matrix.restype = None
 
 #Get update matrix data
 if CMODE != "iterall":
@@ -213,6 +218,10 @@ else:
 #This is our update matrix
 F  = ((c_int * 2) * 2)(row1, row2)
 
+#When using iterplane, this array keeps track of what our
+# matrix has iterated to.
+currentF = ((c_int * 2) * 2)(row1, row2)
+
 gridSize = min(windowDimensions)
 caption  = "ORBITVIS"
 
@@ -228,14 +237,14 @@ pygame.display.set_icon(icon)
 def set_matrix(theMatrix, matrixArr):
 	'''Sets the values for our update matrix, used with "iterall".'''
 	
-	row1 = (c_int*2)(matrixArr[0][0], matrixArr[0][1])
-	row2 = (c_int*2)(matrixArr[1][0], matrixArr[1][1])
-	theMatrix = ((c_int * 2) * 2)(row1, row2)
+	for x in range(0, len(matrixArr)):
+		for y in range(0, len(matrixArr[0])):
+			theMatrix[x][y] = matrixArr[x][y]
 
 	
 def iterate_plane():
 	'''Iterates each vector in the plane, stores their state
-	in vectorStates.
+	in vectorStates (if needed).
 	
 	For CMODE "iterall", vectorStates holds the results of all
 	currently seen matrices after using Floyd's Cycle Detection
@@ -248,6 +257,9 @@ def iterate_plane():
 				vectY   = vectKey % MODULUS
 				vectX   = (vectKey - vectY)//MODULUS
 				vectorStates[x][y] = [vectX, vectY]
+				
+			elif CMODE == "iterplane":
+				C_iterate_matrix(pointer(F), pointer(currentF), MODULUS)
 				
 			elif CMODE == "iterall":
 				if ARRANGEMENT == "nondiag":
@@ -286,8 +298,7 @@ def is_initial_state():
 			
 			elif CMODE == "iterplane":
 				#Convert C output to vector, see if it's at it's original position
-				#iterations-1 ensures the original plane is output twice, like CMODE 2
-				vectorKey = C_step(x, y, pointer(F), MODULUS, iterations-1)
+				vectorKey = C_step(x, y, pointer(currentF), MODULUS, 1)
 				vectY = vectorKey % MODULUS
 				vectX = (vectorKey - vectY)//MODULUS
 				
@@ -326,7 +337,7 @@ def draw_plane(surface):
 				
 			elif CMODE == "iterplane":
 				#Convert C output to vector
-				vectorKey = C_step(x, y, pointer(F), MODULUS, iterations)
+				vectorKey = C_step(x, y, pointer(currentF), MODULUS, 1)
 				vectY = vectorKey % MODULUS
 				vectX = (vectorKey - vectY)//MODULUS
 				vectorOfInterest = [vectX, vectY]
@@ -429,9 +440,12 @@ for x in range(0, MODULUS):
 	for y in range(0, MODULUS):
 		vectorColors[x].append((255*x//MODULUS, 255*y//MODULUS, 0))
 
-#Initialise state of each vector before drawing, if needed, if needed
+#Initialise state of each vector before drawing, if needed
 if CMODE == "iterstate":
 	vectorStates = [[[x, y] for y in range(0, MODULUS)] for x in range(0, MODULUS)]
+	
+elif CMODE == "iterplane":
+	set_matrix(currentF, [[1, 0], [0, 1]])
 	
 elif CMODE == "iterall":
 	vectorStates = [[[0, 0] for y in range(0, MODULUS)] for x in range(0, MODULUS)]
@@ -439,9 +453,8 @@ elif CMODE == "iterall":
 
 #This allows the starting iteration to be nonzero	
 for a in range(0, iterations):
-	if CMODE == "iterstate":
-		iterate_plane()
-	draw_plane(windowDisplay)
+	iterate_plane()
+draw_plane(windowDisplay)
 pygame.display.set_caption(make_caption())
 
 
@@ -464,7 +477,7 @@ if CAPTUREMODE:
 
 	#Loop until there're no more pictures to take
 	while maxcaptures > 0 or maxcaptures == -1:
-		if CMODE in ["iterstate", "iterall"] and iterations != 0: #iterate_plane() is only used with CMODE "iterstate"
+		if iterations != 0:
 			iterate_plane()
 
 		draw_plane(windowDisplay)
@@ -528,9 +541,7 @@ else:
 							if F[1][1] >= MODULUS:
 								F[1][1] -= MODULUS
 						
-					if CMODE in ["iterstate", "iterall"]:
-						iterate_plane()
-
+					iterate_plane()
 					draw_plane(windowDisplay)
 					pygame.display.update()
 					pygame.display.set_caption(make_caption())
@@ -541,9 +552,8 @@ else:
 						vectorStates = [[[x, y] for y in range(0, MODULUS)] for x in range(0, MODULUS)]
 						
 					elif CMODE == "iterplane":
-						iterations -= 1
-						if iterations < 0:
-							iterations = 0
+						iterations = 0
+						set_matrix(currentF, [[1, 0], [0, 1]])
 							
 					elif CMODE == "iterall":
 						if ARRANGEMENT == "nondiag":
@@ -556,7 +566,7 @@ else:
 							if F[1][1] < 0:
 								F[1][1] += MODULUS
 								
-						iterate_plane()
+						iterate_plane()	
 						
 					draw_plane(windowDisplay)
 					pygame.display.update()
@@ -605,7 +615,7 @@ else:
 				windowDimensions = event.size
 				gridSize = min(windowDimensions) #Keep vector grid a square
 				windowDisplay = pygame.display.set_mode(windowDimensions, RESIZABLE)
-
+				
 				draw_plane(windowDisplay)
 				pygame.display.update()
 				
