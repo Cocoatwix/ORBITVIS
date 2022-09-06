@@ -6,7 +6,11 @@ The S key takes a screenshot of the current plane and places it in the working d
 
 ~~~
 
-In order to run ORBITVIS in its current form, LINCELLAUT's object files, an update matrix file, and a shared library file all must be placed in ORBITVIS' directory, and the path to the folder containing these files must be specified in the .config file. Otherwise, ORBITVIS won't be able to perform any of the calculations required for generating its visualisations.
+In order to run ORBITVIS in its current form, LINCELLAUT's object files, an update matrix file (for certain modes), and a shared library file all must be placed in ORBITVIS' directory, and the path to the folder containing these files must be specified in the .config file. Otherwise, ORBITVIS won't be able to perform any of the calculations required for generating its visualisations. If running Windows, the required shared library files can be compiled by running the script "makeshare.ps1" in LINCELLAUT's directory. 
+
+If you encounter the error "OSError: [WinError 193] %1 is not a valid Win32 application" when running, the shared library was probably compiled into a 32-bit library (this is what MinGW's gcc does) while the Python version you're using is 64-bit. Using a 32-bit install of Python should fix the issue.
+
+See LINCELLAUT's documentation for more details.
 
 ~~~
 
