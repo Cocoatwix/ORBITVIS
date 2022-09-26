@@ -26,13 +26,15 @@ ORBITVIS also has a couple different ARRANGEMENT values, which dictate how matri
 
 ~~~
 
-There are three different computation modes for traversing orbits. These can be toggled with the "cmode" key in the .config file. 
+There are four different computation modes for traversing orbits. These can be toggled with the "cmode" key in the .config file. 
 
 "iterplane" makes use of LINCELLAUT's codebase to generate vector orbits on the fly. The modulus used must be manually input into ORBITVIS' .config file (see LINCELLAUT's documentation on .config files for more info). The right arrow key increases the iteration count by 1, while the left arrow resets the iterations to zero.
 
 "iterstate" calculates orbits on the fly like iterplane, but the vectors' current states are saved each generation. The arrow keys behave the same as they did for iterplane.
 
 "iterstate" and "iterplane" are two different modes for legacy reasons. In the future, it's likely that iterstate will be scrapped completely in favour of iterplane (since it requires less memory overall).
+
+"cycles" simply colours vectors based on their orbit length--that is, the time it takes for a vector to iterate back to itself. The brighter the square, the higher the orbit length.
 
 "iterall" is a completely different visualisation from the previous two. Iterall calculates the transient and cycle lengths for ALL possible matrices, and represents each matrix's values as a coloured square. The arrow keys for this mode are used to change the range of matrices displayed to the screen. By default, the diagonal entries of the update matrix are incremented on each screen as you move along the orthogonal axes. The off diagonal entries remain fixed on each screen. Pressing the up/down keys will change the bottom left entry of the matrix, while the left/right keys will change the top right entry. This behaviour changes depending on the value of ARRANGEMENT. 
 
@@ -43,3 +45,5 @@ Iterstate and iterall allow you to gain some insights into the vectors/matrices 
 ~~~
 
 If CAPTUREMODE is enabled (see documentation for .config file), ORBITVIS will generate every possible configuration with the given settings and save them as screenshots. ORBITVIS knows to automatically stop generating screenshots when the vectors fall into a cycle. If, however, the user only wants to generate a few screenshots and not the entire cycle, the "maxcaptures" key can be set in the .config file.
+
+Note that CAPTUREMODE does not work when CMODE is set to "cycles".

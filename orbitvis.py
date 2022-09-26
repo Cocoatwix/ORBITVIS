@@ -43,6 +43,7 @@ windowDimensions = [640, 480]
 # "iterstate" : Same as "iterplane", except current vector states are saved in vectorStates,
 #    reducing the C computation needed. (potentially faster for large moduli,
 #    though requires more memory).
+# "cycles"    : Colours vectors based on their cycle length. Brighter = higher cycle length
 # "iterall"   : Iterates every possible matrix under the given modulus and displays
 #    coloured squares based on the transient and cycle lengths of each matrix.
 CMODE = "iterstate"
@@ -152,7 +153,7 @@ if CMODE in ["iterstate", "iterplane"] and COLORMODE not in ["repaint", "drag"]:
 	print("Defaulting COLORMODE to drag...")
 	COLORMODE = "drag"
 	
-elif CMODE in ["iterall"] and COLORMODE not in ["relative", "rellog"]:
+elif CMODE in ["iterall", "cycles"] and COLORMODE not in ["relative", "rellog"]:
 	print("Selected COLORMODE isn't compatiable with chosen CMODE.")
 	print("Defaulting COLORMODE to rellog...")
 	COLORMODE = "rellog"
@@ -252,7 +253,7 @@ def iterate_plane():
 	
 	for x in range(0, MODULUS):
 		for y in range(0, MODULUS):
-			if CMODE == "iterstate":
+			if CMODE in ["iterstate", "cycles"]:
 				vectKey = C_step(vectorStates[x][y][0], vectorStates[x][y][1], F, MODULUS, 1)
 				vectY   = vectKey % MODULUS
 				vectX   = (vectKey - vectY)//MODULUS
@@ -342,9 +343,16 @@ def draw_plane(surface):
 				vectX = (vectorKey - vectY)//MODULUS
 				vectorOfInterest = [vectX, vectY]
 
-				
+			elif CMODE == "cycles":
+				currVect = (c_int * 2)(x, y)
+				vectorInfo  = get_orbit_info(currVect, F, MODULUS)
+				matrixInfo  = get_orbit_info_array(F, MODULUS)
+				matrixTau   = matrixInfo % (2*MODULUS)
+				matrixOmega = (matrixInfo - matrixTau)//(2*MODULUS)
+
+		
 			extend = [1, 1]
-			if CMODE == "iterall":
+			if CMODE in ["iterall", "cycles"]:
 				coordX = xStart + x*tileSize
 				coordY = yStart - (y+1)*tileSize
 				
@@ -373,25 +381,34 @@ def draw_plane(surface):
 			
 			#MODULUS-1 prevents colorX and colorY from going over MODULUS
 			if COLORMODE == "relative":
-				if COLORTRANSIENT != "solo":
-					colorX = (vectorOfInterest[0]*(MODULUS-1))//maxInfo[0]
-				
-				if maxInfo[1] != 0 and COLORTRANSIENT != "none":
-					colorY = (vectorOfInterest[1]*(MODULUS-1))//maxInfo[1]
+				if CMODE == "cycles":
+					colorX = (vectorInfo*(MODULUS-1))//matrixOmega
+					
+				#iterall
+				else:
+					if COLORTRANSIENT != "solo":
+						colorX = (vectorOfInterest[0]*(MODULUS-1))//maxInfo[0]
+					
+					if maxInfo[1] != 0 and COLORTRANSIENT != "none":
+						colorY = (vectorOfInterest[1]*(MODULUS-1))//maxInfo[1]
 					
 				
 			elif COLORMODE == "rellog":
-				if COLORTRANSIENT != "solo":
-					colorX = floor(log(vectorOfInterest[0]+1, maxInfo[0]+1)*(MODULUS-1))
+				if CMODE == "cycles":
+					colorX = floor(log(vectorInfo+1, matrixOmega+1)*(MODULUS-1))
 				
-				if maxInfo[1] != 0 and COLORTRANSIENT != "none":
-					colorY = floor(log(vectorOfInterest[1]+1, maxInfo[1]+1)*(MODULUS-1))
+				#iterall
+				else:
+					if COLORTRANSIENT != "solo":
+						colorX = floor(log(vectorOfInterest[0]+1, maxInfo[0]+1)*(MODULUS-1))
+					
+					if maxInfo[1] != 0 and COLORTRANSIENT != "none":
+						colorY = floor(log(vectorOfInterest[1]+1, maxInfo[1]+1)*(MODULUS-1))
 					
 				
 			elif COLORMODE == "repaint":
 				colorX = vectorOfInterest[0]
 				colorY = vectorOfInterest[1]
-				
 				
 			elif COLORMODE == "drag":
 				colorX = x
@@ -450,6 +467,10 @@ elif CMODE == "iterplane":
 elif CMODE == "iterall":
 	vectorStates = [[[0, 0] for y in range(0, MODULUS)] for x in range(0, MODULUS)]
 	iterate_plane()
+	
+elif CMODE == "cycles":
+	vectorStates = [[[x, y] for y in range(0, MODULUS)] for x in range(0, MODULUS)]
+	iterate_plane()
 
 #This allows the starting iteration to be nonzero	
 for a in range(0, iterations):
@@ -457,8 +478,12 @@ for a in range(0, iterations):
 draw_plane(windowDisplay)
 pygame.display.set_caption(make_caption())
 
+#New version of Pygame doesn't automatically call VIDEORESIZE event at startup, I think
+pygame.display.update()
 
-if CAPTUREMODE:
+
+#Doesn't make sense to take captures when in cycle mode
+if CAPTUREMODE and CMODE != "cycles":
 	#First, calculate the cycle length and transient length
 	# so that ORBITVIS can stop taking screenshots once there's
 	# nothing new to see (only if CMODE != "iterall").
@@ -525,7 +550,7 @@ else:
 	while True:
 		for event in pygame.event.get():
 		
-			if event.type == pygame.KEYDOWN:
+			if event.type == pygame.KEYDOWN and CMODE != "cycles":
 				if event.key == pygame.K_RIGHT: #Iterate
 					iterations += 1
 					
@@ -640,7 +665,7 @@ else:
 				
 				#Give info about the vector clicked
 			elif HOVERMODE and event.type == pygame.MOUSEBUTTONDOWN:
-				if CMODE == "iterstate":
+				if CMODE in ["iterstate", "cycles"]:
 					if vectorHover[0] != -1:
 						print("Vector clicked: <", vectorHover[0], ", ", vectorHover[1], ">", sep="")
 						print("Destination: <", vectorStates[vectorHover[0]][vectorHover[1]][0], 
