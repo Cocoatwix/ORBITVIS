@@ -1,5 +1,0 @@
-Depending on the window size and modulus used, the grid displayed by ORBITVIS can sometimes display white lines separating the vectors. This is due to rounding inconsistencies with how PyGame rounds floats when taking coordinates for drawing squares to the screen. 
-
-To get rid of these separating lines, simply readjust the window size until you find a size that eliminates the lines.
-
-As of now, this problem is believed to be solved. 

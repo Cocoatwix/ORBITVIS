@@ -47,6 +47,8 @@ windowDimensions = [640, 480]
 # "iterall"   : Iterates every possible matrix under the given modulus and displays
 #    coloured squares based on the transient and cycle lengths of each matrix.
 CMODE = "iterstate"
+CMODEcatalogue = ["iterplane", "iterstate", "iterall", "cycles"]
+EXCEPTIONunknownCMODE = "Unknown CMODE passed in config file."
 
 #repaint  : Colour based on where its initial vector lands on that iteration
 #drag     : Colour based on which vector goes to that spot
@@ -104,6 +106,12 @@ for line in configData:
 		
 	elif splitline[0] == "cmode":
 		CMODE = splitline[1]
+		
+		#Finally, some bloody error checking
+		if CMODE not in CMODEcatalogue:
+			raise Exception(EXCEPTIONunknownCMODE)
+			pygame.quit()
+			quit()
 		
 	elif splitline[0] == "colormode":
 		COLORMODE = splitline[1]
@@ -435,7 +443,10 @@ def make_caption():
 	'''Returns a caption for the window containing iterations,
 	the modulus, and the update matrix.'''
 	if CMODE != "iterall":
-		cap = caption + " - i" + str(iterations) + "m" + str(MODULUS) + "F" + \
+		cap = caption + " - " 
+		if CMODE != "cycles":
+			cap += "i" + str(iterations)
+		cap += "m" + str(MODULUS) + "F" + \
 		str(F[0][0]) + str(F[0][1]) + str(F[1][0]) + str(F[1][1])
 		
 	else:
@@ -475,6 +486,7 @@ elif CMODE == "cycles":
 #This allows the starting iteration to be nonzero	
 for a in range(0, iterations):
 	iterate_plane()
+
 draw_plane(windowDisplay)
 pygame.display.set_caption(make_caption())
 
@@ -550,8 +562,8 @@ else:
 	while True:
 		for event in pygame.event.get():
 		
-			if event.type == pygame.KEYDOWN and CMODE != "cycles":
-				if event.key == pygame.K_RIGHT: #Iterate
+			if event.type == pygame.KEYDOWN:
+				if event.key == pygame.K_RIGHT and CMODE != "cycles": #Iterate
 					iterations += 1
 					
 					#When using iterall, arrow keys change F
@@ -571,7 +583,7 @@ else:
 					pygame.display.update()
 					pygame.display.set_caption(make_caption())
 					
-				elif event.key == pygame.K_LEFT: #Reset to 0th iteration or change matrix
+				elif event.key == pygame.K_LEFT and CMODE != "cycles": #Reset to 0th iteration or change matrix
 					if CMODE == "iterstate":
 						iterations = 0
 						vectorStates = [[[x, y] for y in range(0, MODULUS)] for x in range(0, MODULUS)]
@@ -597,7 +609,7 @@ else:
 					pygame.display.update()
 					pygame.display.set_caption(make_caption())
 					
-				elif event.key == pygame.K_DOWN:
+				elif event.key == pygame.K_DOWN and CMODE != "cycles":
 					if CMODE == "iterall": #Changing matrix in iterall mode
 						if ARRANGEMENT == "nondiag":
 							F[1][0] -= 1
@@ -614,7 +626,7 @@ else:
 						pygame.display.update()
 						pygame.display.set_caption(make_caption())
 						
-				elif event.key == pygame.K_UP:
+				elif event.key == pygame.K_UP and CMODE != "cycles":
 					if CMODE == "iterall": #Changing matrix in iterall mode
 						if ARRANGEMENT == "nondiag":
 							F[1][0] += 1
