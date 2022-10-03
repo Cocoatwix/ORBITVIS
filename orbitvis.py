@@ -261,11 +261,17 @@ def iterate_plane():
 	
 	for x in range(0, MODULUS):
 		for y in range(0, MODULUS):
-			if CMODE in ["iterstate", "cycles"]:
+			if CMODE == "iterstate":
 				vectKey = C_step(vectorStates[x][y][0], vectorStates[x][y][1], F, MODULUS, 1)
 				vectY   = vectKey % MODULUS
 				vectX   = (vectKey - vectY)//MODULUS
 				vectorStates[x][y] = [vectX, vectY]
+				
+			elif CMODE == "cycles":
+				currVect = (c_int * 2)(x, y)
+				vectorInfo = get_orbit_info(currVect, F, MODULUS)
+				vectorStates[x][y][0] = vectorInfo
+				vectorStates[x][y][1] = -1
 				
 			elif CMODE == "iterplane":
 				C_iterate_matrix(pointer(F), pointer(currentF), MODULUS)
@@ -336,12 +342,17 @@ def draw_plane(surface):
 	coordY = 0
 	colorX = 0
 	colorY = 0
+	
+	if CMODE == "cycles":
+		matrixInfo  = get_orbit_info_array(F, MODULUS)
+		matrixTau   = matrixInfo % (2*MODULUS)
+		matrixOmega = (matrixInfo - matrixTau)//(2*MODULUS)
 
 	for x in range(0, MODULUS):
 		for y in range(0, MODULUS):
 
 			#Getting appropriate vector for drawing the square
-			if CMODE in ["iterstate", "iterall"]:
+			if CMODE in ["iterstate", "iterall", "cycles"]:
 				vectorOfInterest = vectorStates[x][y]
 				
 			elif CMODE == "iterplane":
@@ -350,13 +361,6 @@ def draw_plane(surface):
 				vectY = vectorKey % MODULUS
 				vectX = (vectorKey - vectY)//MODULUS
 				vectorOfInterest = [vectX, vectY]
-
-			elif CMODE == "cycles":
-				currVect = (c_int * 2)(x, y)
-				vectorInfo  = get_orbit_info(currVect, F, MODULUS)
-				matrixInfo  = get_orbit_info_array(F, MODULUS)
-				matrixTau   = matrixInfo % (2*MODULUS)
-				matrixOmega = (matrixInfo - matrixTau)//(2*MODULUS)
 
 		
 			extend = [1, 1]
@@ -390,7 +394,7 @@ def draw_plane(surface):
 			#MODULUS-1 prevents colorX and colorY from going over MODULUS
 			if COLORMODE == "relative":
 				if CMODE == "cycles":
-					colorX = (vectorInfo*(MODULUS-1))//matrixOmega
+					colorX = (vectorOfInterest[0]*(MODULUS-1))//matrixOmega
 					
 				#iterall
 				else:
@@ -403,7 +407,7 @@ def draw_plane(surface):
 				
 			elif COLORMODE == "rellog":
 				if CMODE == "cycles":
-					colorX = floor(log(vectorInfo+1, matrixOmega+1)*(MODULUS-1))
+					colorX = floor(log(vectorOfInterest[0]+1, matrixOmega+1)*(MODULUS-1))
 				
 				#iterall
 				else:
@@ -475,12 +479,8 @@ if CMODE == "iterstate":
 elif CMODE == "iterplane":
 	set_matrix(currentF, [[1, 0], [0, 1]])
 	
-elif CMODE == "iterall":
+elif CMODE in ["iterall", "cycles"]:
 	vectorStates = [[[0, 0] for y in range(0, MODULUS)] for x in range(0, MODULUS)]
-	iterate_plane()
-	
-elif CMODE == "cycles":
-	vectorStates = [[[x, y] for y in range(0, MODULUS)] for x in range(0, MODULUS)]
 	iterate_plane()
 
 #This allows the starting iteration to be nonzero	
@@ -680,8 +680,9 @@ else:
 				if CMODE in ["iterstate", "cycles"]:
 					if vectorHover[0] != -1:
 						print("Vector clicked: <", vectorHover[0], ", ", vectorHover[1], ">", sep="")
-						print("Destination: <", vectorStates[vectorHover[0]][vectorHover[1]][0], 
-						", ", vectorStates[vectorHover[0]][vectorHover[1]][1], ">", sep="")
+						if CMODE != "cycles":
+							print("Destination: <", vectorStates[vectorHover[0]][vectorHover[1]][0], 
+							", ", vectorStates[vectorHover[0]][vectorHover[1]][1], ">", sep="")
 						clickedVect = (c_int * 2)(vectorHover[0], vectorHover[1])
 						print("Cycle length:", get_orbit_info(clickedVect, F, MODULUS))
 							
